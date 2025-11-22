@@ -5,7 +5,13 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        header: ['Alagard', 'system-ui', 'sans-serif'],
+        display: ['Alagard', 'system-ui', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }
