@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.jsx
-import mascotImg from "../assets/mascot.png";
+import whispImg from "../assets/whisp.png";
 
 function HomeScreen({ streak, flexPasses, setStreak, setFlexPasses }) {
   const handleMarkGood = () => {
@@ -22,7 +22,7 @@ function HomeScreen({ streak, flexPasses, setStreak, setFlexPasses }) {
       {/* ⭐ Mascot container like Talking Tom */}
       <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
         <img
-          src={mascotImg}
+          src={whispImg}
           alt="Mascot"
           className="w-48 h-48 object-contain drop-shadow-xl"
         />
