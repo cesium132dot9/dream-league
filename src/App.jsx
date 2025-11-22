@@ -27,7 +27,7 @@ function App() {
       <div className="w-[390px] h-[800px] bg-gradient-to-b from-indigo-900 to-slate-900 text-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/10">
         {/* Fake status bar */}
         <div className="h-10 flex items-center justify-between px-4 text-xs text-white/70 bg-black/20">
-          <span>Sleep Squad</span>
+          <span>Dream League</span>
           <span>🕒 9:41</span>
         </div>
 

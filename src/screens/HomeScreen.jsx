@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.jsx
-import mascotImg from "../assets/mascot.png"; // <-- add your owl file here
+import mascotImg from "../assets/mascot.png";
 
 function HomeScreen({ streak, flexPasses, setStreak, setFlexPasses }) {
   const handleMarkGood = () => {
@@ -16,7 +16,8 @@ function HomeScreen({ streak, flexPasses, setStreak, setFlexPasses }) {
     <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
       
       {/* Title */}
-      <h1 className="text-xl font-semibold mb-2">Tonight’s Routine</h1>
+      <h1 className="text-xl font-semibold mb-2">Dream League</h1>
+      <h2 className="text-lg font-medium mb-4 text-white/80">Tonight's Routine</h2>
 
       {/* ⭐ Mascot container like Talking Tom */}
       <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
