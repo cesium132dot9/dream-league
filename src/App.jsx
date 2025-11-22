@@ -11,12 +11,16 @@ function App() {
   const [hasOnboarded, setHasOnboarded] = useState(false);
 
   // demo state – later you can wire this up properly
-  const [streak, setStreak] = useState(3);
-  const [flexPasses, setFlexPasses] = useState(1);
+  const [streak, setStreak] = useState(0);
+  const [freezes, setFreeze] = useState(2);
+  const [targetBedtime, setTargetBedtime] = useState("23:00");
+  const [sleepHistory, setSleepHistory] = useState([]); // Array of {date, status: 'good'|'late'|'freeze'}
+  const [weeklyPoints, setWeeklyPoints] = useState(0); 
 
   const handleCompleteOnboarding = (onboardingData) => {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
     console.log("Onboarding complete:", onboardingData);
+    setTargetBedtime(onboardingData.bedtime);
     setHasOnboarded(true);
     setCurrentScreen("home");
   };
@@ -39,13 +43,18 @@ function App() {
           {currentScreen === "home" && (
             <HomeScreen
               streak={streak}
-              flexPasses={flexPasses}
+              freezes={freezes}
               setStreak={setStreak}
-              setFlexPasses={setFlexPasses}
+              setFreeze={setFreeze}
+              targetBedtime={targetBedtime}
+              sleepHistory={sleepHistory}
+              setSleepHistory={setSleepHistory}
+              weeklyPoints={weeklyPoints}
+              setWeeklyPoints={setWeeklyPoints}
             />
           )}
           {currentScreen === "history" && (
-            <HistoryScreen streak={streak} />
+            <HistoryScreen streak={streak} sleepHistory={sleepHistory} weeklyPoints={weeklyPoints} />
           )}
           {currentScreen === "customize" && (
             <CustomizeScreen streak={streak} />
