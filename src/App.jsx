@@ -14,7 +14,9 @@ function App() {
   const [streak, setStreak] = useState(3);
   const [flexPasses, setFlexPasses] = useState(1);
 
-  const handleCompleteOnboarding = () => {
+  const handleCompleteOnboarding = (onboardingData) => {
+    // Store onboarding data (you can use this later for app blocking, schedule, etc.)
+    console.log("Onboarding complete:", onboardingData);
     setHasOnboarded(true);
     setCurrentScreen("home");
   };
