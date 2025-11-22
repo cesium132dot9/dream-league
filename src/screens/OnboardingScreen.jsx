@@ -8,6 +8,8 @@ import whispTiredImg from "../assets/whisp-tired.png";
 import big3Img from "../assets/big-3.png";
 import dozerHappyImg from "../assets/dozer-happy.png";
 import dozerCatnapFightingImg from "../assets/dozer-napster-fighting.png";
+import napsterSleepingImg from "../assets/napster-sleeping-no-window.png";
+import dozerLoadingVideo from "../assets/dozer-loading.mp4";
 import dreamLeagueIcon from "../assets/DreamLeague-icon.png";
 
 function OnboardingScreen({ onComplete }) {
@@ -48,8 +50,13 @@ function OnboardingScreen({ onComplete }) {
   
   // Animation state for friends page
   const [showDozerFighting, setShowDozerFighting] = useState(false);
+  const [showFriendsButtons, setShowFriendsButtons] = useState(false);
+  
+  // Loading screen state
+  const [showLoading, setShowLoading] = useState(false);
+  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
 
-  const totalPages = 9;
+  const totalPages = 8;
 
   const availableApps = ["TikTok", "Instagram", "YouTube", "Twitter/X", "Reddit", "Snapchat", "Facebook", "Netflix"];
 
@@ -71,13 +78,21 @@ function OnboardingScreen({ onComplete }) {
         }, 300);
       }, 10);
     } else {
-      // Complete onboarding
-      onComplete({
-        selectedApps,
-        bedtime,
-        wakeTime,
-        selectedMascot,
-      });
+      // Show loading screen
+      setShowLoading(true);
+      setLoadingFadeOut(false);
+      // Fade out after 4.5 seconds, then complete onboarding after 5 seconds
+      setTimeout(() => {
+        setLoadingFadeOut(true);
+        setTimeout(() => {
+          onComplete({
+            selectedApps,
+            bedtime,
+            wakeTime,
+            selectedMascot,
+          });
+        }, 500); // Complete after fade-out animation
+      }, 4500);
     }
   };
 
@@ -252,7 +267,7 @@ function OnboardingScreen({ onComplete }) {
           onClick={handleNext}
           className="w-full py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 font-semibold text-base text-white transition shadow-lg shadow-indigo-500/40"
         >
-          Let's fix that
+          Let's fix that!
         </button>
         {currentPage > 0 && (
           <button
@@ -348,10 +363,15 @@ function OnboardingScreen({ onComplete }) {
     } else if (currentPage === 5) {
       // Reset and start animations for friends page
       setShowDozerFighting(false);
+      setShowFriendsButtons(false);
       
       // Fade in dozer image and boxes 700ms after page loads (when heading appears)
       const friendsTimer = setTimeout(() => {
         setShowDozerFighting(true);
+        // Fade in buttons shortly after image/boxes fade in (500ms transition + 300ms delay)
+        setTimeout(() => {
+          setShowFriendsButtons(true);
+        }, 800);
       }, 700);
       
       return () => {
@@ -401,6 +421,7 @@ function OnboardingScreen({ onComplete }) {
       setShowDozer(false);
       setShowPointSystem(false);
       setShowDozerFighting(false);
+      setShowFriendsButtons(false);
       setShowMascot(false);
       setSpeechBubbleText("");
       setShowHeading(false);
@@ -707,12 +728,14 @@ function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* Navigation buttons */}
-      <div className="px-5 pb-8 space-y-3">
+      <div className={`px-5 pb-8 space-y-3 transition-opacity duration-500 ${
+        showFriendsButtons ? 'opacity-100' : 'opacity-0'
+      }`}>
         <button
           onClick={handleNext}
-          className="w-full py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 font-semibold text-base text-white transition shadow-lg shadow-indigo-500/40"
+          className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 font-semibold text-base text-white transition shadow-lg shadow-emerald-500/40"
         >
-          Continue
+          Let's Get Started
         </button>
         {currentPage > 0 && (
           <button
@@ -728,38 +751,54 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 7: Sleep schedule
   const renderSchedulePage = () => (
-    <div className="h-full overflow-y-auto p-5 space-y-5 pt-8">
-      <div className="text-center space-y-2 mb-4">
-        <h1 className="text-3xl font-bold">Set Your Sleep Schedule</h1>
-        <p className="text-sm text-white/70">
-          When do you want to sleep and wake up?
-        </p>
-      </div>
+    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-6">
+        <div className="text-center space-y-6 max-w-sm w-full">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-header text-white">
+              Set Your Schedule
+            </h1>
+            <p className="text-sm text-white/70">
+              You can change this later.
+            </p>
+          </div>
 
-      <div className="bg-black/30 rounded-2xl p-4 space-y-3">
-        <h2 className="font-semibold text-sm">Sleep schedule</h2>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-xs text-white/60 mb-1">
-              Bedtime
-            </label>
-            <input
-              type="time"
-              value={bedtime}
-              onChange={(e) => setBedtime(e.target.value)}
-              className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+          {/* Napster sleeping image */}
+          <div className="flex items-center justify-center my-2">
+            <img
+              src={napsterSleepingImg}
+              alt="Napster sleeping"
+              className="w-64 h-64 object-contain"
             />
           </div>
-          <div className="flex-1">
-            <label className="block text-xs text-white/60 mb-1">
-              Wake time
-            </label>
-            <input
-              type="time"
-              value={wakeTime}
-              onChange={(e) => setWakeTime(e.target.value)}
-              className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
-            />
+
+          <div className="bg-black/30 rounded-2xl p-4 space-y-3">
+            <h2 className="font-semibold text-sm">Sleep schedule</h2>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs text-white/60 mb-1">
+                  Bedtime
+                </label>
+                <input
+                  type="time"
+                  value={bedtime}
+                  onChange={(e) => setBedtime(e.target.value)}
+                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-white/60 mb-1">
+                  Wake time
+                </label>
+                <input
+                  type="time"
+                  value={wakeTime}
+                  onChange={(e) => setWakeTime(e.target.value)}
+                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -810,11 +849,29 @@ function OnboardingScreen({ onComplete }) {
     renderFriendsPage,
     renderAppsPage,
     renderSchedulePage,
-    renderMascotPage,
   ];
+
+  // Loading screen
+  const renderLoadingScreen = () => (
+    <div className={`h-full w-full relative overflow-hidden transition-opacity duration-500 ${
+      loadingFadeOut ? 'opacity-0' : 'opacity-100'
+    }`}>
+      <video
+        src={dozerLoadingVideo}
+        autoPlay
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {showLoading ? (
+        renderLoadingScreen()
+      ) : (
+        <>
       {/* Page content with smooth transitions */}
       <div className="flex-1 relative overflow-hidden">
         {/* Previous page sliding out */}
@@ -880,6 +937,8 @@ function OnboardingScreen({ onComplete }) {
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
