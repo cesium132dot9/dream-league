@@ -1,90 +1,77 @@
 // src/screens/HomeScreen.jsx
-import MascotCard from "../components/MascotCard";
+import mascotImg from "../assets/mascot.png"; // <-- add your owl file here
 
 function HomeScreen({ streak, flexPasses, setStreak, setFlexPasses }) {
   const handleMarkGood = () => {
-    // simple demo logic
     setStreak((s) => s + 1);
-    if ((streak + 1) % 3 === 0) {
-      setFlexPasses((p) => p + 1);
-    }
+    if ((streak + 1) % 3 === 0) setFlexPasses((p) => p + 1);
   };
 
-  const handleBreakStreak = () => {
-    setStreak(0);
-  };
-
+  const handleBreakStreak = () => setStreak(0);
   const handleUseFlex = () => {
-    if (flexPasses > 0) {
-      setFlexPasses((p) => p - 1);
-      // streak stays the same
-    }
+    if (flexPasses > 0) setFlexPasses((p) => p - 1);
   };
 
   return (
-    <div className="h-full flex flex-col p-5 gap-4">
-      <h1 className="text-xl font-semibold">Tonight&apos;s game plan</h1>
+    <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
+      
+      {/* Title */}
+      <h1 className="text-xl font-semibold mb-2">Tonight’s Routine</h1>
 
-      <MascotCard streak={streak} />
+      {/* ⭐ Mascot container like Talking Tom */}
+      <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
+        <img
+          src={mascotImg}
+          alt="Mascot"
+          className="w-48 h-48 object-contain drop-shadow-xl"
+        />
+      </div>
 
-      {/* Sleep info */}
-      <div className="bg-black/30 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs text-white/60">Target bedtime</p>
-          <p className="text-lg font-semibold">11:30 pm</p>
-          <p className="text-xs text-white/60 mt-1">
-            Wake up at <span className="font-medium">7:30 am</span>
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-white/60">Current streak</p>
-          <p className="text-2xl font-bold">{streak}️⃣</p>
-          <p className="text-xs text-emerald-300 mt-1">
-            Flex passes: {flexPasses}
-          </p>
+      {/* Sleep + streak info */}
+      <div className="w-full bg-black/30 rounded-2xl p-4 mt-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-xs text-white/60">Target bedtime</p>
+            <p className="text-lg font-semibold">11:30 pm</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-white/60">Streak</p>
+            <p className="text-2xl font-bold">{streak}</p>
+            <p className="text-xs text-sky-300 mt-1">
+              Flex passes: {flexPasses}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="bg-black/30 rounded-2xl p-4 space-y-3">
-        <p className="text-xs text-white/70 mb-1">
-          When you wake up tomorrow, tap how the night went:
+      {/* Buttons like “Task icons” */}
+      <div className="w-full bg-black/30 rounded-2xl p-4 mt-3 space-y-3">
+        <p className="text-xs text-white/60 text-center">
+          Log your sleep outcome:
         </p>
+
         <div className="grid grid-cols-3 gap-2 text-sm">
           <button
             onClick={handleMarkGood}
-            className="bg-emerald-500/90 hover:bg-emerald-400 rounded-xl py-2 px-2 font-semibold"
+            className="bg-emerald-500/90 hover:bg-emerald-400 rounded-xl py-2 font-semibold"
           >
-            ✅ On time
+            ✅ Good
           </button>
           <button
             onClick={handleBreakStreak}
-            className="bg-rose-500/90 hover:bg-rose-400 rounded-xl py-2 px-2 font-semibold"
+            className="bg-rose-500/90 hover:bg-rose-400 rounded-xl py-2 font-semibold"
           >
-            ❌ Broke it
+            ❌ Late
           </button>
           <button
             onClick={handleUseFlex}
-            className="bg-sky-500/90 hover:bg-sky-400 rounded-xl py-2 px-2 font-semibold"
+            className="bg-sky-500/90 hover:bg-sky-400 rounded-xl py-2 font-semibold"
           >
-            🧊 Use Flex
+            🧊 Flex
           </button>
         </div>
       </div>
 
-      {/* Fake app lock demo */}
-      <div className="bg-black/30 rounded-2xl p-4 space-y-2">
-        <p className="text-xs text-white/70">
-          Try opening a “blocked” app during sleep:
-        </p>
-        <button className="w-full bg-white/5 hover:bg-white/10 rounded-xl py-2 text-sm flex items-center justify-center gap-2">
-          📱 Open TikTok (demo)
-        </button>
-        <p className="text-[11px] text-white/50">
-          In a real version, we&apos;d intercept late‑night openings and gently
-          block them or spend a Flex Pass.
-        </p>
-      </div>
     </div>
   );
 }
