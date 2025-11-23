@@ -6,8 +6,11 @@ import whispSittingImg from "../assets/whisp-sitting.png";
 import whispWelcomeImg from "../assets/whisp-welcome.png";
 import whispTiredImg from "../assets/whisp-tired.png";
 import big3Img from "../assets/big-3.png";
+import big3CustomizedImg from "../assets/big-3-customized.png";
 import dozerHappyImg from "../assets/dozer-happy.png";
 import dozerCatnapFightingImg from "../assets/dozer-napster-fighting.png";
+import napsterSleepingImg from "../assets/napster-sleeping-no-window.png";
+import dozerLoadingVideo from "../assets/dozer-loading.mp4";
 import dreamLeagueIcon from "../assets/DreamLeague-icon.png";
 
 function OnboardingScreen({ onComplete }) {
@@ -46,8 +49,20 @@ function OnboardingScreen({ onComplete }) {
   const [showDozer, setShowDozer] = useState(false);
   const [showPointSystem, setShowPointSystem] = useState(false);
   
+  // Animation state for dream squad page
+  const [dreamSquadSubtitleText, setDreamSquadSubtitleText] = useState("");
+  const [showBig3Customized, setShowBig3Customized] = useState(false);
+  
   // Animation state for friends page
   const [showDozerFighting, setShowDozerFighting] = useState(false);
+  const [showFriendsButtons, setShowFriendsButtons] = useState(false);
+  
+  // Loading screen state
+  const [showLoading, setShowLoading] = useState(false);
+  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
+  
+  // Welcome page fade-in state
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const totalPages = 9;
 
@@ -71,13 +86,21 @@ function OnboardingScreen({ onComplete }) {
         }, 300);
       }, 10);
     } else {
-      // Complete onboarding
-      onComplete({
-        selectedApps,
-        bedtime,
-        wakeTime,
-        selectedMascot,
-      });
+      // Show loading screen
+      setShowLoading(true);
+      setLoadingFadeOut(false);
+      // Fade out after 4.5 seconds, then complete onboarding after 5 seconds
+      setTimeout(() => {
+        setLoadingFadeOut(true);
+        setTimeout(() => {
+          onComplete({
+            selectedApps,
+            bedtime,
+            wakeTime,
+            selectedMascot,
+          });
+        }, 500); // Complete after fade-out animation
+      }, 4500);
     }
   };
 
@@ -97,7 +120,9 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 0: Welcome (Duolingo style)
   const renderWelcomePage = () => (
-    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 ${
+      showWelcome ? 'opacity-100' : 'opacity-0'
+    }`}>
       {/* Mascot at top */}
       <div className="flex-1 flex items-center justify-center pt-12 pb-4">
         <img
@@ -252,7 +277,7 @@ function OnboardingScreen({ onComplete }) {
           onClick={handleNext}
           className="w-full py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 font-semibold text-base text-white transition shadow-lg shadow-indigo-500/40"
         >
-          Let's fix that
+          Let's fix that!
         </button>
         {currentPage > 0 && (
           <button
@@ -268,7 +293,17 @@ function OnboardingScreen({ onComplete }) {
 
   // Reset animation states when page changes
   useEffect(() => {
-    if (currentPage === 1) {
+    if (currentPage === 0) {
+      // Reset and start fade-in for welcome page
+      setShowWelcome(false);
+      const welcomeTimer = setTimeout(() => {
+        setShowWelcome(true);
+      }, 100); // Small delay before starting fade-in
+      
+      return () => {
+        clearTimeout(welcomeTimer);
+      };
+    } else if (currentPage === 1) {
       // Reset and start animations for mascot intro page
       setMascotIntroText("");
       
@@ -346,19 +381,52 @@ function OnboardingScreen({ onComplete }) {
         clearTimeout(leagueTimer);
       };
     } else if (currentPage === 5) {
-      // Reset and start animations for friends page
+      // Reset and start animations for dream squad page
+      setDreamSquadSubtitleText("");
+      setShowBig3Customized(false);
+      
+      // Step 1: Type out subtitle text
+      const subtitleText = "Turn your sleep streak into in-game swag!";
+      const typingSpeed = 50; // ms per character
+      
+      const dreamSquadTimer = setTimeout(() => {
+        let currentIndex = 0;
+        const typeInterval = setInterval(() => {
+          if (currentIndex <= subtitleText.length) {
+            setDreamSquadSubtitleText(subtitleText.slice(0, currentIndex));
+            currentIndex++;
+          } else {
+            clearInterval(typeInterval);
+            // Step 2: After typing completes, fade in image
+            setTimeout(() => {
+              setShowBig3Customized(true);
+            }, 100);
+          }
+        }, typingSpeed);
+      }, 200); // Small delay before starting
+      
+      return () => {
+        clearTimeout(dreamSquadTimer);
+      };
+    } else if (currentPage === 6) {
+      // Reset and start animations for friends page (was page 5, now page 6)
       setShowDozerFighting(false);
+      setShowFriendsButtons(false);
       
       // Fade in dozer image and boxes 700ms after page loads (when heading appears)
       const friendsTimer = setTimeout(() => {
         setShowDozerFighting(true);
+        // Fade in buttons shortly after image/boxes fade in (500ms transition + 300ms delay)
+        setTimeout(() => {
+          setShowFriendsButtons(true);
+        }, 800);
       }, 700);
       
       return () => {
         clearTimeout(friendsTimer);
       };
-    } else if (currentPage === 6) {
-      // Reset and start animations for app blocking page
+    } else if (currentPage === 7) {
+      // Reset and start animations for app blocking page (was page 6, now page 7)
       setShowMascot(false);
       setSpeechBubbleText("");
       setShowHeading(false);
@@ -400,7 +468,10 @@ function OnboardingScreen({ onComplete }) {
       setLeagueSubtitleText("");
       setShowDozer(false);
       setShowPointSystem(false);
+      setDreamSquadSubtitleText("");
+      setShowBig3Customized(false);
       setShowDozerFighting(false);
+      setShowFriendsButtons(false);
       setShowMascot(false);
       setSpeechBubbleText("");
       setShowHeading(false);
@@ -408,7 +479,7 @@ function OnboardingScreen({ onComplete }) {
     }
   }, [currentPage]);
 
-  // Page 6: App blocking (iOS style with intro)
+  // Page 7: App blocking (iOS style with intro) (was page 6, now page 7)
   const renderAppsPage = () => {
     const subtitleText = "These apps will be blocked during your sleep time.";
 
@@ -667,7 +738,33 @@ function OnboardingScreen({ onComplete }) {
     </div>
   );
 
-  // Page 5: Friends & Leagues Splash
+  // Page 5: Build Your Dream Squad
+  const renderDreamSquadPage = () => (
+    <div className="h-full overflow-y-auto bg-gradient-to-b from-indigo-900 to-slate-900 p-5">
+      <div className="text-center space-y-2 mb-6 pt-6">
+        <h1 className="text-3xl font-header text-white mb-2">Build Your Dream Squad</h1>
+        <p className="text-sm text-white/70 min-h-[1.25rem]">
+          {dreamSquadSubtitleText}
+          {dreamSquadSubtitleText.length > 0 && dreamSquadSubtitleText.length < "Turn your sleep streak into in-game swag!".length && (
+            <span className="animate-pulse">|</span>
+          )}
+        </p>
+      </div>
+
+      {/* Big 3 Customized image */}
+      <div className={`flex items-center justify-center my-6 transition-opacity duration-500 ${
+        showBig3Customized ? 'opacity-100' : 'opacity-0'
+      }`}>
+        <img
+          src={big3CustomizedImg}
+          alt="Big 3 Customized"
+          className="w-72 h-72 object-contain"
+        />
+      </div>
+    </div>
+  );
+
+  // Page 6: Friends & Leagues Splash (was page 5, now page 6)
   const renderFriendsPage = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       {/* Centered content */}
@@ -707,12 +804,14 @@ function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* Navigation buttons */}
-      <div className="px-5 pb-8 space-y-3">
+      <div className={`px-5 pb-8 space-y-3 transition-opacity duration-500 ${
+        showFriendsButtons ? 'opacity-100' : 'opacity-0'
+      }`}>
         <button
           onClick={handleNext}
-          className="w-full py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 font-semibold text-base text-white transition shadow-lg shadow-indigo-500/40"
+          className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 font-semibold text-base text-white transition shadow-lg shadow-emerald-500/40"
         >
-          Continue
+          Let's Get Started
         </button>
         {currentPage > 0 && (
           <button
@@ -726,40 +825,56 @@ function OnboardingScreen({ onComplete }) {
     </div>
   );
 
-  // Page 7: Sleep schedule
+  // Page 8: Sleep schedule (was page 7, now page 8)
   const renderSchedulePage = () => (
-    <div className="h-full overflow-y-auto p-5 space-y-5 pt-8">
-      <div className="text-center space-y-2 mb-4">
-        <h1 className="text-3xl font-bold">Set Your Sleep Schedule</h1>
-        <p className="text-sm text-white/70">
-          When do you want to sleep and wake up?
-        </p>
-      </div>
+    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-6">
+        <div className="text-center space-y-6 max-w-sm w-full">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-header text-white">
+              Set Your Schedule
+            </h1>
+            <p className="text-sm text-white/70">
+              You can change this later.
+            </p>
+          </div>
 
-      <div className="bg-black/30 rounded-2xl p-4 space-y-3">
-        <h2 className="font-semibold text-sm">Sleep schedule</h2>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-xs text-white/60 mb-1">
-              Bedtime
-            </label>
-            <input
-              type="time"
-              value={bedtime}
-              onChange={(e) => setBedtime(e.target.value)}
-              className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+          {/* Napster sleeping image */}
+          <div className="flex items-center justify-center my-2">
+            <img
+              src={napsterSleepingImg}
+              alt="Napster sleeping"
+              className="w-64 h-64 object-contain"
             />
           </div>
-          <div className="flex-1">
-            <label className="block text-xs text-white/60 mb-1">
-              Wake time
-            </label>
-            <input
-              type="time"
-              value={wakeTime}
-              onChange={(e) => setWakeTime(e.target.value)}
-              className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
-            />
+
+          <div className="bg-black/30 rounded-2xl p-4 space-y-3">
+            <h2 className="font-semibold text-sm">Sleep schedule</h2>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs text-white/60 mb-1">
+                  Bedtime
+                </label>
+                <input
+                  type="time"
+                  value={bedtime}
+                  onChange={(e) => setBedtime(e.target.value)}
+                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-white/60 mb-1">
+                  Wake time
+                </label>
+                <input
+                  type="time"
+                  value={wakeTime}
+                  onChange={(e) => setWakeTime(e.target.value)}
+                  className="w-full rounded-xl bg-black/50 border border-white/10 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -807,14 +922,33 @@ function OnboardingScreen({ onComplete }) {
     renderStatsPage,
     renderLeagueFormatPage,
     renderLeagueSchedulePage,
+    renderDreamSquadPage,
     renderFriendsPage,
     renderAppsPage,
     renderSchedulePage,
-    renderMascotPage,
   ];
+
+  // Loading screen
+  const renderLoadingScreen = () => (
+    <div className={`h-full w-full relative overflow-hidden transition-opacity duration-500 ${
+      loadingFadeOut ? 'opacity-0' : 'opacity-100'
+    }`}>
+      <video
+        src={dozerLoadingVideo}
+        autoPlay
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {showLoading ? (
+        renderLoadingScreen()
+      ) : (
+        <>
       {/* Page content with smooth transitions */}
       <div className="flex-1 relative overflow-hidden">
         {/* Previous page sliding out */}
@@ -843,7 +977,7 @@ function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* Navigation - hidden on welcome page, mascot intro page, stats page, and friends page */}
-      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 5 && (
+      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 6 && (
         <div className="p-5 space-y-3 border-t border-white/10 bg-gradient-to-b from-indigo-900 to-slate-900">
           {/* Progress indicator */}
           <div className="flex gap-1 justify-center">
@@ -880,6 +1014,8 @@ function OnboardingScreen({ onComplete }) {
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
