@@ -5,7 +5,7 @@ function LeagueScreen({ username, weeklyPoints, totalPoints, leaderboardWeeklyPo
   const availableLeagues = [
     {
       id: 1,
-      name: "Dream Team",
+      name: "Slumber Super League",
       emoji: "⭐",
       description: "Elite sleepers only",
     },
@@ -163,7 +163,7 @@ function LeagueScreen({ username, weeklyPoints, totalPoints, leaderboardWeeklyPo
         <ul className="text-white/70 text-xs space-y-1 list-disc list-inside">
           <li>Join leagues to compete with other users</li>
           <li>Your season points determine your rank</li>
-          <li>Earn points every week</li>
+          <li>Leaderboard is updated every Saturday</li>
         </ul>
       </div>
     </div>

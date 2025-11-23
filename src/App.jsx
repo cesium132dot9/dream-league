@@ -34,18 +34,23 @@ function App() {
   // Fake users for leaderboard - all start at 0, accumulate points on matchday
   const [fakeUsers, setFakeUsers] = useState(() => {
     const initialUsers = [
-      { name: "Lionel Meowssi", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Slotan Ibrahimovic", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Catstiano Ronaldo", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Thierry Hungry", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Zinedine Zleep", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Luka Modrobinć", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Ninja Turtle", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Justin Fung", weeklyPoints: 0, totalPoints: 0 }, // Always stays at 0
-      { name: "Ronaldingo", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Neymaraptor", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Wayne Roo-kney", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Kevin De Br-owl-ne", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Michael Snoredan 🏀", weeklyPoints: 0, totalPoints: 0 },
+      { name: "LeBunk James 🏀", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Sleephen Curry 🏀", weeklyPoints: 0, totalPoints: 0 },
+      { name: "TraviZzz Kelce 🏈", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Leon Drowse-aitl 🏒", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Katie Bed-decky 🏊‍♀️", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Tired Woods ⛳", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Cozy Bryant 🏀", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Andres Ini-rest-a ⚽", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Wayne Restzky 🏒", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Snory Mcllroy ⛳", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Zinedream Zidane ⚽", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Roger Bederer 🎾", weeklyPoints: 0, totalPoints: 0 }, 
+      { name: "Snooze-ain Bolt 🏃‍♂️", weeklyPoints: 0, totalPoints: 0 }, 
+      { name: "Shohei Oh-yawni ⚾", weeklyPoints: 0, totalPoints: 0 }, 
+      { name: "Doze Bichette ⚾", weeklyPoints: 0, totalPoints: 0 }, 
+      { name: "Justin Fung 🤓", weeklyPoints: 0, totalPoints: 0}
     ];
     return initialUsers;
   });
@@ -61,7 +66,7 @@ function App() {
     setFakeUsers((prevUsers) => {
       return prevUsers.map((user) => {
         // Justin Fung always gets 0 points
-        if (user.name === "Justin Fung") {
+        if (user.name === "Justin Fung 🤓") {
           return { ...user, weeklyPoints: 0 };
         }
         // Other users get random points 0-6
@@ -162,6 +167,8 @@ function App() {
               selectedOutfit={selectedOutfit}
               showSad={showSad}
               unlockedOutfits={unlockedOutfits}
+              fakeUsers={fakeUsers}
+              leaderboardTotalPoints={leaderboardTotalPoints}
               onNavigateToCustomize={() => setCurrentScreen("customize")}
               onMatchdayComplete={updateFakeUsersOnMatchday}
             />

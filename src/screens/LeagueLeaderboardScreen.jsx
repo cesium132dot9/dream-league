@@ -80,20 +80,32 @@ function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, 
                 className={`grid grid-cols-[40px_1fr_60px_70px] gap-2 items-center px-3 py-3 rounded-xl transition ${
                   isCurrentUser
                     ? "bg-gradient-to-r from-cyan-500/30 to-indigo-500/30 border border-cyan-400/30"
+                    : position === 1
+                    ? "bg-gradient-to-r from-yellow-400/30 to-yellow-500/30 border border-yellow-300/50"
+                    : position === 2
+                    ? "bg-gradient-to-r from-slate-300/20 to-gray-400/20 border border-slate-300/40"
+                    : position === 3
+                    ? "bg-gradient-to-r from-orange-600/20 to-amber-700/20 border border-orange-500/40"
                     : "bg-white/5 hover:bg-white/10"
                 }`}
               >
                 {/* Position */}
                 <div className="flex items-center justify-center">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                      isCurrentUser
-                        ? "bg-cyan-400/40 text-cyan-200"
-                        : "bg-white/10 text-white/60"
-                    }`}
-                  >
-                    {position}
-                  </div>
+                  {position <= 3 ? (
+                    <span className="text-2xl">
+                      {position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'}
+                    </span>
+                  ) : (
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        isCurrentUser
+                          ? "bg-cyan-400/40 text-cyan-200"
+                          : "bg-white/10 text-white/60"
+                      }`}
+                    >
+                      {position}
+                    </div>
+                  )}
                 </div>
 
                 {/* Player Name */}
