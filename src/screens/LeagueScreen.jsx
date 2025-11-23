@@ -1,5 +1,5 @@
 // src/screens/LeagueScreen.jsx
-function LeagueScreen({ username = "Chen", weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagues, onViewLeaderboard }) {
+function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagues, onViewLeaderboard }) {
 
   // Sample leagues available to join
   const availableLeagues = [

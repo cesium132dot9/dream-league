@@ -20,6 +20,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   const [recapData, setRecapData] = useState(null);
   const previousValuesRef = useRef({ streak: 0, weeklyPoints: 0, unlockedOutfits: new Set(["default"]) });
   const [isSaturdayRecap, setIsSaturdayRecap] = useState(false);
+  const shouldResetPointsRef = useRef(false);
 
   // Speech bubble messages
   const speechMessages = {
@@ -79,6 +80,25 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     const randomIndex = Math.floor(Math.random() * messages.length);
     setSpeechBubble(messages[randomIndex]);
   }, [sleepHistory, streak, username]);
+
+  // Reset weekly points on Saturday after match popup is closed and useEffect has run
+  useEffect(() => {
+    // If isSaturdayRecap is true, it means we were on Saturday when the match was triggered
+    // Only reset if the match popup was just closed and we have the flag set
+    if (isSaturdayRecap && !showMatchResult && shouldResetPointsRef.current) {
+      // Use setTimeout to ensure this runs after other state updates from the speech bubble useEffect
+      setTimeout(() => {
+        // Call handleCloseMatchPopup to reset weekly points for the new week
+        // handleCloseMatchPopup only uses setWeeklyPoints which is stable, so it's safe to omit from deps
+        handleCloseMatchPopup();
+        shouldResetPointsRef.current = false;
+      }, 0);
+    } else if (!isSaturdayRecap && !showMatchResult) {
+      // Clear the flag if we're not on Saturday to prevent accidental resets
+      shouldResetPointsRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sleepHistory, showMatchResult, weeklyPoints, isSaturdayRecap]);
   const logSleepEntry = (status) => {
     setSleepHistory((history) => {
       // Reset history after completing a full week (7 entries)
@@ -108,6 +128,8 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     const isSaturday = currentDayIndex === 6;
 
     if (isSaturday) {
+      // Set flag to indicate we're on Saturday/matchday
+      setIsSaturdayRecap(true);
       // Save the final score before any reset
       setUserFinalScore(weeklyPoints);
 
@@ -186,10 +208,6 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     if (isSunday && isStartingNewWeek) {
       setWeeklyPoints(0);
     }
-
-    const prevStreak = streak; 
-    const prevWeeklyPoints = weeklyPoints; 
-    const prevUnlockedOutfits = new Set(unlockedOutfits);
     
     // Check if it's Saturday and show match result
     checkMatchDay();
@@ -229,11 +247,6 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       if (isSunday && isStartingNewWeek) {
         setWeeklyPoints(0);
       }
-
-      // Store previous values
-      const prevStreak = streak;
-      const prevWeeklyPoints = weeklyPoints;
-      const prevUnlockedOutfits = new Set(unlockedOutfits);
       
       // Check if it's Saturday and show match result
       checkMatchDay();
@@ -252,8 +265,8 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   };
 
   // Handle closing the match result popup
+  // This function resets weekly points after the match popup is closed on Saturday
   const handleCloseMatchPopup = () => {
-    setShowMatchResult(false);
     // Reset weekly points for the new week
     setWeeklyPoints(0);
   };
@@ -639,6 +652,11 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                   opponentScore,
                 };
                 
+                // If isSaturdayRecap is true, it means we were on Saturday when the match was triggered
+                // Only set flag to reset points if we were on Saturday/matchday
+                if (isSaturdayRecap) {
+                  shouldResetPointsRef.current = true;
+                }
                 setShowMatchResult(false);
                 
                 // Always show daily recap after match result (match result only appears on Saturday)
