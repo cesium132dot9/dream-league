@@ -1,9 +1,14 @@
 // src/screens/HomeScreen.jsx
+import { useState } from "react";
 import whispImg from "../assets/whisp.png";
 
 const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints }) {
+  const [showMatchResult, setShowMatchResult] = useState(false);
+  const [matchWon, setMatchWon] = useState(false);
+  const [opponentScore, setOpponentScore] = useState(0);
+  const [userFinalScore, setUserFinalScore] = useState(0);
   const logSleepEntry = (status) => {
     setSleepHistory((history) => {
       // Reset history after completing a full week (7 entries)
@@ -27,14 +32,42 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     });
   };
 
+  // Check if it's Saturday and show match result
+  const checkMatchDay = () => {
+    const currentDayIndex = sleepHistory.length % 7;
+    const isSaturday = currentDayIndex === 6;
+
+    if (isSaturday) {
+      // Save the final score before any reset
+      setUserFinalScore(weeklyPoints);
+
+      // Generate opponent score
+      const randomIndex = Math.floor(Math.random() * friendsPoints.length);
+      const randomNum = friendsPoints[randomIndex];
+      setOpponentScore(randomNum);
+
+      // Determine win/loss
+      if (weeklyPoints >= randomNum) {
+        setMatchWon(true);
+        setFreeze((p) => p + 1);
+      } else {
+        setMatchWon(false);
+      }
+      
+      // Show match result popup
+      setShowMatchResult(true);
+    }
+  };
+
   const handleMarkGood = () => {
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6;
-    const isStartingNewWeek = sleepHistory.length >= 6;
+    const isSunday = currentDayIndex === 0;
+    const isStartingNewWeek = sleepHistory.length >= 7;
 
     // Reset weekly points when starting a new week (on Sunday)
-    if (isSaturday && isStartingNewWeek) {
+    if (isSunday && isStartingNewWeek) {
       setWeeklyPoints(0);
     }
 
@@ -44,22 +77,47 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       setWeeklyPoints((p) => p + pointsEarned);
     }
 
-    // Award freeze when completing Saturday (winning the match week)
-    if (isSaturday) {
-      setFreeze((p) => p + 1);
-    }
+    // Check if it's Saturday and show match result
+    checkMatchDay();
 
     setStreak((s) => s + 1);
     logSleepEntry('good');
   };
 
   const handleBreakStreak = () => {
+    // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
+    const currentDayIndex = sleepHistory.length % 7;
+    const isSaturday = currentDayIndex === 6; 
+    const isSunday = currentDayIndex === 0;
+    const isStartingNewWeek = sleepHistory.length >= 7;
+
+    // Reset weekly points when starting a new week (on Sunday)
+    if (isSunday && isStartingNewWeek) {
+      setWeeklyPoints(0);
+    }
+
+    // Check if it's Saturday and show match result
+    checkMatchDay();
+
     setStreak(0);
     logSleepEntry('late');
   };
 
   const handleUseFreeze = () => {
     if (freezes > 0) {
+      // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
+      const currentDayIndex = sleepHistory.length % 7;
+      const isSunday = currentDayIndex === 0;
+      const isStartingNewWeek = sleepHistory.length >= 7;
+
+      // Reset weekly points when starting a new week (on Sunday)
+      if (isSunday && isStartingNewWeek) {
+        setWeeklyPoints(0);
+      }
+
+      // Check if it's Saturday and show match result
+      checkMatchDay();
+
       setFreeze((p) => p - 1);
       logSleepEntry('freeze');
     }
@@ -136,7 +194,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         </div>
       </div>
 
-      {/* Buttons like “Task icons” */}
+      {/* Buttons like "Task icons" */}
       <div className="w-full bg-black/30 rounded-2xl p-4 mt-3 space-y-3">
         <p className="text-xs text-white/60 text-center">
           Log your sleep outcome:
@@ -163,6 +221,75 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           </button>
         </div>
       </div>
+
+      {/* Match Result Popup */}
+      {showMatchResult && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
+            {matchWon ? (
+              <>
+                <div className="text-center mb-4">
+                  <div className="text-6xl mb-3">🏆</div>
+                  <h2 className="text-3xl font-bold text-yellow-400 mb-2">Victory!</h2>
+                  <p className="text-white/80 text-sm">You won this week's match!</p>
+                </div>
+
+                <div className="bg-black/30 rounded-2xl p-4 mb-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">Your Score:</span>
+                    <span className="text-2xl font-bold text-yellow-400">{userFinalScore}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">Opponent:</span>
+                    <span className="text-2xl font-bold text-white/60">{opponentScore}</span>
+                  </div>
+                </div>
+
+                <div className="bg-sky-500/20 rounded-2xl p-4 mb-4 border border-sky-400/30">
+                  <p className="text-center text-sm text-white">
+                    <span className="font-semibold text-sky-300">+1 Freeze</span> earned! 🧊
+                  </p>
+                  <p className="text-center text-xs text-white/70 mt-1">
+                    Use it to protect your streak on a late night.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-4">
+                  <div className="text-6xl mb-3">😔</div>
+                  <h2 className="text-3xl font-bold text-rose-400 mb-2">Close One!</h2>
+                  <p className="text-white/80 text-sm">Better luck next week!</p>
+                </div>
+
+                <div className="bg-black/30 rounded-2xl p-4 mb-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">Your Score:</span>
+                    <span className="text-2xl font-bold text-white/60">{userFinalScore}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">Opponent:</span>
+                    <span className="text-2xl font-bold text-yellow-400">{opponentScore}</span>
+                  </div>
+                </div>
+
+                <div className="bg-rose-500/20 rounded-2xl p-4 mb-4 border border-rose-400/30">
+                  <p className="text-center text-sm text-white">
+                    Keep your streak going and try again next week! 💪
+                  </p>
+                </div>
+              </>
+            )}
+
+            <button
+              onClick={() => setShowMatchResult(false)}
+              className="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-semibold text-white shadow-lg shadow-indigo-500/40 transition"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
