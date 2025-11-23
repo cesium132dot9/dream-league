@@ -14,11 +14,127 @@ import dozerDefaultImg from "../assets/dozer-happy.png";
 import dozerStreakImg from "../assets/dozer-streak.png";
 import dozerSadImg from "../assets/dozer-sad.png";
 import { useState, useEffect, useRef } from "react";
-import whispImg from "../assets/whisp.png";
+import OpenAI from "openai";
 
-const friendsPoints = [0, 1, 2, 3, 4, 5, 6]
+const friendsPoints = [0, 1, 2, 3, 4, 5, 6];
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize, onMatchdayComplete }) {
+// Initialize OpenRouter AI
+const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+const openai = apiKey ? new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: apiKey,
+  dangerouslyAllowBrowser: true
+}) : null;
+
+// Store previous AI messages to avoid repetition
+const previousMessages = {
+  goodLowStreak: [],
+  goodHighStreak: [],
+  late: [],
+  freeze: []
+}; 
+
+// Prompt templates for different scenarios
+const PROMPTS = {
+  goodLowStreak: (username, streak) =>
+    `You are a friendly sleep buddy mascot encouraging ${username} who just maintained their sleep schedule. Their current streak is ${streak} (low number). Generate ONE short, encouraging message similar to: "Yay! Keep it going!", "Keep at it!", "A well-rested you is the best you!", "Let's win this matchweek!". The message MUST be around 20 characters not including ${username}'s name. Reply with ONLY the message, nothing else.`,
+
+  goodHighStreak: (username, streak) =>
+    `You are a friendly sleep buddy mascot congratulating ${username} who just maintained their sleep schedule. Their current streak is ${streak} (high number). Generate ONE short, enthusiastic message similar to: "We're on a roll!", "Keep the streak going!", "Don't let the streak die!", "No stopping us!". The message MUST be around 20 characters not including ${username}'s name. Reply with ONLY the message, nothing else.`,
+
+  late: (username) =>
+    `You are a friendly sleep buddy mascot consoling ${username} who slept late or didn't adhere to their schedule. Generate ONE short, sympathetic message similar to: "It's okay... let's try again!", "Awe, man...", "I feel groggy today...". The message MUST be around 20 characters not including ${username}'s name. Reply with ONLY the message, nothing else.`,
+
+  freeze: (username) =>
+    `You are a friendly sleep buddy mascot reacting to ${username} using a freeze. Generate ONE short, playful message similar to: "Brrr! Snow day!", "🎶 Let it go...", "FREEZE!". The message MUST be around 20 characters not including ${username}'s name. Reply with ONLY the message, nothing else.`
+};
+
+// Generate AI message using OpenRouter
+async function generateAIMessage(scenario, username, streak) {
+  if (!openai) {
+    // Fallback to static messages if API key not configured
+    return null;
+  }
+
+  // Get the appropriate prompt for this scenario
+  const promptTemplate = PROMPTS[scenario];
+  if (!promptTemplate) {
+    return null;
+  }
+
+  try {
+    let prompt = promptTemplate(username, streak);
+
+    // Add previous messages to avoid repetition
+    const prevMsgs = previousMessages[scenario] || [];
+    if (prevMsgs.length > 0) {
+      const recentMessages = prevMsgs.slice(-5); // Only show last 5 to keep prompt short
+      prompt += `\n\nIMPORTANT: Do NOT use any of these previous messages: ${recentMessages.map(m => `"${m}"`).join(", ")}. Generate something completely different.`;
+    }
+
+    console.log(`[AI] Generating message for scenario: ${scenario}`);
+    console.log(`[AI] Prompt:`, prompt);
+
+    const completion = await openai.chat.completions.create({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+    });
+
+    console.log(`[AI] Full response:`, completion);
+    console.log(`[AI] Choices:`, completion.choices);
+    console.log(`[AI] Choices length:`, completion.choices?.length);
+
+    if (!completion.choices || completion.choices.length === 0) {
+      console.error("[AI] No choices in response");
+      return null;
+    }
+
+    console.log(`[AI] First choice:`, completion.choices[0]);
+    const message = completion.choices[0].message;
+    console.log(`[AI] Message object:`, message);
+
+    if (!message || !message.content) {
+      console.error("[AI] No content in message");
+      return null;
+    }
+
+    const text = message.content.trim();
+    console.log(`[AI] Generated: ${text}`);
+
+    // Store the generated message to avoid repetition next time
+    if (!previousMessages[scenario]) {
+      previousMessages[scenario] = [];
+    }
+    previousMessages[scenario].push(text);
+
+    // Keep only the last 10 messages per scenario to avoid memory bloat
+    if (previousMessages[scenario].length > 10) {
+      previousMessages[scenario].shift();
+    }
+
+    // Ensure message is reasonable length (allowing some flexibility)
+    if (text.length <= 50) {
+      return text;
+    } else {
+      // If too long, truncate or return null to use fallback
+      return text.substring(0, 47) + "...";
+    }
+  } catch (error) {
+    console.error("[AI] Full error object:", error);
+    console.error("[AI] Error message:", error.message);
+    if (error.response) {
+      console.error("[AI] Error response:", error.response);
+    }
+    return null;
+  }
+}
+
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), fakeUsers = [], leaderboardTotalPoints = 0, onNavigateToCustomize, onMatchdayComplete }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -26,13 +142,16 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   const [speechBubble, setSpeechBubble] = useState("");
   const [showDailyRecap, setShowDailyRecap] = useState(false);
   const [recapData, setRecapData] = useState(null);
-  const previousValuesRef = useRef({ streak: 0, weeklyPoints: 0, unlockedOutfits: new Set(["default"]) });
   const [isSaturdayRecap, setIsSaturdayRecap] = useState(false);
   const shouldResetPointsRef = useRef(false);
   const [showNoFreezesPopup, setShowNoFreezesPopup] = useState(false);
   const [hasShownFirstDayTransition, setHasShownFirstDayTransition] = useState(false);
   // Show transition immediately on first load if no sleep history
   const [showDayTransition, setShowDayTransition] = useState(sleepHistory.length === 0);
+  // Track if we're already generating a message to prevent multiple API calls
+  const isGeneratingRef = useRef(false);
+  // Cache the last generated message key to avoid regenerating for the same state
+  const lastMessageKeyRef = useRef("");
 
   // Speech bubble messages
   const speechMessages = {
@@ -76,6 +195,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     if (sleepHistory.length === 0) {
       // Default message if no history
       setSpeechBubble("Let's get started!");
+      lastMessageKeyRef.current = "";
       return;
     }
 
@@ -83,24 +203,70 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     const lastStatus = lastEntry?.status;
 
     let messages = [];
-    
+    let scenario = null;
+
     if (lastStatus === 'good') {
       if (streak <= 2) {
         messages = speechMessages.goodLowStreak;
+        scenario = 'goodLowStreak';
       } else {
         messages = speechMessages.goodHighStreak;
+        scenario = 'goodHighStreak';
       }
     } else if (lastStatus === 'late') {
       messages = speechMessages.late;
+      scenario = 'late';
     } else if (lastStatus === 'freeze') {
       messages = speechMessages.freeze;
+      scenario = 'freeze';
     } else {
       messages = ["Let's do this!"];
     }
 
-    // Randomly select a message
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    setSpeechBubble(messages[randomIndex]);
+    // Create a unique key for this message state
+    const messageKey = `${scenario}-${streak}-${sleepHistory.length}`;
+
+    console.log(`[AI] Current key: ${messageKey}, Last key: ${lastMessageKeyRef.current}, Is generating: ${isGeneratingRef.current}`);
+
+    // If we already generated a message for this exact state, skip
+    if (messageKey === lastMessageKeyRef.current) {
+      console.log(`[AI] Skipping - already generated for this state`);
+      return;
+    }
+
+    // If already generating, skip this request
+    if (isGeneratingRef.current) {
+      console.log(`[AI] Skipping - already generating`);
+      return;
+    }
+
+    // Try to generate AI message, fallback to static messages
+    if (scenario) {
+      isGeneratingRef.current = true;
+      lastMessageKeyRef.current = messageKey;
+
+      generateAIMessage(scenario, username, streak).then(aiMessage => {
+        if (aiMessage) {
+          setSpeechBubble(aiMessage);
+        } else {
+          // Fallback to random static message
+          const randomIndex = Math.floor(Math.random() * messages.length);
+          setSpeechBubble(messages[randomIndex]);
+        }
+      }).catch((error) => {
+        console.error('[AI] Failed to generate, using fallback:', error.message);
+        // On error, use static messages
+        const randomIndex = Math.floor(Math.random() * messages.length);
+        setSpeechBubble(messages[randomIndex]);
+      }).finally(() => {
+        isGeneratingRef.current = false;
+      });
+    } else {
+      // No scenario, use static messages
+      lastMessageKeyRef.current = messageKey;
+      const randomIndex = Math.floor(Math.random() * messages.length);
+      setSpeechBubble(messages[randomIndex]);
+    }
   }, [sleepHistory, streak, username]);
 
   // Reset weekly points on Saturday after match popup is closed and useEffect has run
@@ -717,29 +883,108 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         </div>
       )}
 
-      {/* Match Result Popup */}
-      {showMatchResult && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
-            {matchWon ? (
-              <>
-                <div className="text-center mb-4">
-                  <div className="text-6xl mb-3">🏆</div>
-                  <h2 className="text-3xl font-bold text-yellow-400 mb-2">Victory!</h2>
-                  <p className="text-white/80 text-sm">You won this week's match!</p>
-                </div>
+      {/* Matchday Report Popup */}
+      {showMatchResult && (() => {
+        // Create league table with all players using season-long totalPoints
+        const allPlayers = [
+          { name: username, points: leaderboardTotalPoints, isCurrentUser: true },
+          ...fakeUsers.map((user) => ({ name: user.name, points: user.totalPoints, isCurrentUser: false }))
+        ];
 
-                <div className="bg-black/30 rounded-2xl p-4 mb-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Your Score:</span>
-                    <span className="text-2xl font-bold text-yellow-400">{userFinalScore}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Opponent:</span>
-                    <span className="text-2xl font-bold text-white/60">{opponentScore}</span>
-                  </div>
-                </div>
+        // Sort by points (descending), then by name for consistency
+        const sorted = allPlayers.sort((a, b) => {
+          if (b.points !== a.points) {
+            return b.points - a.points;
+          }
+          return a.name.localeCompare(b.name);
+        });
 
+        // Apply standard competition ranking (tied ranks)
+        const leagueTable = sorted.map((player, index) => {
+          let rank = index + 1;
+          if (index > 0 && sorted[index - 1].points === player.points) {
+            // Find the first user with this score
+            for (let i = index - 1; i >= 0; i--) {
+              if (sorted[i].points === player.points) {
+                rank = i + 1;
+              } else {
+                break;
+              }
+            }
+          }
+          return { ...player, rank };
+        });
+
+        // Find user data
+        const userEntry = leagueTable.find(p => p.isCurrentUser);
+        const userPosition = userEntry ? userEntry.rank : 1;
+
+        // Get top 3 by rank (not index)
+        const top3 = leagueTable.filter(p => p.rank <= 3);
+
+        // Check if user is in top 3
+        const userInTop3 = userPosition <= 3;
+
+        return (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-white mb-2">Matchday Report</h2>
+                <p className="text-white/70 text-sm">Season Standings</p>
+              </div>
+
+              {/* League Table */}
+              <div className="bg-black/30 rounded-2xl p-4 mb-4">
+                <div className="space-y-2">
+                  {top3.map((player, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center justify-between p-2 rounded-xl ${
+                        player.isCurrentUser
+                          ? 'bg-indigo-500/30 border border-indigo-400/50'
+                          : player.rank === 1
+                          ? 'bg-gradient-to-r from-yellow-400/30 to-yellow-500/30 border border-yellow-300/50'
+                          : player.rank === 2
+                          ? 'bg-gradient-to-r from-slate-300/20 to-gray-400/20 border border-slate-300/40'
+                          : player.rank === 3
+                          ? 'bg-gradient-to-r from-orange-600/20 to-amber-700/20 border border-orange-500/40'
+                          : 'bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold w-8 text-center">
+                          {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : '🥉'}
+                        </span>
+                        <span className={`font-semibold ${
+                          player.isCurrentUser ? 'text-indigo-300' : 'text-white/90'
+                        }`}>
+                          {player.name}
+                        </span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-400">{player.points}</span>
+                    </div>
+                  ))}
+
+                  {/* Show user if not in top 3 */}
+                  {!userInTop3 && (
+                    <>
+                      <div className="text-center text-white/40 text-xs py-1">...</div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-500/30 border border-indigo-400/50">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold w-8 text-center text-white/60">
+                            #{userPosition}
+                          </span>
+                          <span className="font-semibold text-indigo-300">{username}</span>
+                        </div>
+                        <span className="text-xl font-bold text-yellow-400">{leaderboardTotalPoints}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Rewards/Status */}
+              {matchWon ? (
                 <div className="bg-sky-500/20 rounded-2xl p-4 mb-4 border border-sky-400/30">
                   <p className="text-center text-sm text-white">
                     <span className="font-semibold text-sky-300">+1 Freeze</span> earned! 🧊
@@ -748,35 +993,15 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                     Use it to protect your streak on a late night.
                   </p>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="text-center mb-4">
-                  <div className="text-6xl mb-3">😔</div>
-                  <h2 className="text-3xl font-bold text-rose-400 mb-2">Close One!</h2>
-                  <p className="text-white/80 text-sm">Better luck next week!</p>
-                </div>
-
-                <div className="bg-black/30 rounded-2xl p-4 mb-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Your Score:</span>
-                    <span className="text-2xl font-bold text-white/60">{userFinalScore}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Opponent:</span>
-                    <span className="text-2xl font-bold text-yellow-400">{opponentScore}</span>
-                  </div>
-                </div>
-
-                <div className="bg-rose-500/20 rounded-2xl p-4 mb-4 border border-rose-400/30">
+              ) : (
+                <div className="bg-white/10 rounded-2xl p-4 mb-4 border border-white/20">
                   <p className="text-center text-sm text-white">
-                    Keep your streak going and try again next week! 💪
+                    Keep your streak going for more points next week! 💪
                   </p>
                 </div>
-              </>
-            )}
+              )}
 
-            <button
+              <button
               onClick={() => {
                 // Store match result data before closing (match result only shows on Saturday)
                 const matchResultData = {
@@ -833,9 +1058,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
             >
               Next
             </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       </div>
     </>
   );
