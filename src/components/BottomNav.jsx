@@ -3,6 +3,7 @@ function BottomNav({ currentScreen, setCurrentScreen }) {
   const items = [
     { id: "home", label: "Home", icon: "🏠" },
     { id: "history", label: "History", icon: "📅" },
+    { id: "league", label: "League", icon: "🏆" },
     { id: "customize", label: "Customize", icon: "🎽" },
   ];
 
