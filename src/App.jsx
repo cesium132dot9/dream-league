@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HistoryScreen from "./screens/HistoryScreen";
@@ -18,7 +18,9 @@ function App() {
   const [sleepHistory, setSleepHistory] = useState([]); // Array of {date, status: 'good'|'late'|'freeze'}
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [selectedOutfit, setSelectedOutfit] = useState("default"); // "default", "pit", etc.
-  const [unlockedOutfits, setUnlockedOutfits] = useState(new Set(["default"])); // Permanently unlocked outfits 
+  const [unlockedOutfits, setUnlockedOutfits] = useState(new Set(["default"])); // Permanently unlocked outfits
+  const [showSad, setShowSad] = useState(false); // Show sad character after streak is lost
+  const previousStreakRef = useRef(0); 
 
   const handleCompleteOnboarding = (onboardingData) => {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
@@ -51,6 +53,25 @@ function App() {
     });
   }, [streak]);
 
+  // Detect when streak is lost and show sad character
+  useEffect(() => {
+    const previousStreak = previousStreakRef.current;
+    
+    // If streak goes from > 0 to 0, show sad character
+    if (previousStreak > 0 && streak === 0) {
+      setShowSad(true);
+    }
+    
+    // If streak is regained (goes from 0 to > 0), hide sad character
+    // This happens when user clicks "good" after losing streak
+    if (showSad && streak > 0) {
+      setShowSad(false);
+    }
+    
+    // Update previous streak ref
+    previousStreakRef.current = streak;
+  }, [streak, showSad]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
       {/* Phone frame */}
@@ -79,6 +100,9 @@ function App() {
               setWeeklyPoints={setWeeklyPoints}
               username={username}
               selectedOutfit={selectedOutfit}
+              showSad={showSad}
+              unlockedOutfits={unlockedOutfits}
+              onNavigateToCustomize={() => setCurrentScreen("customize")}
             />
           )}
           {currentScreen === "history" && (

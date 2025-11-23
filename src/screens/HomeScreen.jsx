@@ -3,16 +3,82 @@ import whispDefaultImg from "../assets/whisp-default.png";
 import whispStreakImg from "../assets/whisp-streak.png";
 import whispPitsDefaultImg from "../assets/whisp-pits-default.png";
 import whispPitStreakImg from "../assets/whisp-pit-streak.png";
-import { useState } from "react";
+import whispSadImg from "../assets/whisp-sad.png";
+import whispPitsSadImg from "../assets/whisp-pits-sad.png";
+import { useState, useEffect, useRef } from "react";
 import whispImg from "../assets/whisp.png";
 
 const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, username = "Chen", selectedOutfit = "default" }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
   const [userFinalScore, setUserFinalScore] = useState(0);
+  const [speechBubble, setSpeechBubble] = useState("");
+  const [showDailyRecap, setShowDailyRecap] = useState(false);
+  const [recapData, setRecapData] = useState(null);
+  const previousValuesRef = useRef({ streak: 0, weeklyPoints: 0, unlockedOutfits: new Set(["default"]) });
+  const [isSaturdayRecap, setIsSaturdayRecap] = useState(false);
+
+  // Speech bubble messages
+  const speechMessages = {
+    goodLowStreak: [
+      `Yay! Keep it going, ${username}!`,
+      "Keep at it!",
+      `A well-rested ${username} is the best ${username}!`,
+      "Let's win this matchweek!"
+    ],
+    goodHighStreak: [
+      "We're on a roll!",
+      "Keep the streak going!",
+      "Don't let the streak die!",
+      "Let's win this matchweek!",
+      `No stopping us, ${username}!`
+    ],
+    late: [
+      "It's okay... let's try again!",
+      "Awe, man...",
+      "I feel groggy today..."
+    ],
+    freeze: [
+      "Brrr! Snow day!",
+      "🎶 Let it go...",
+      "FREEZE!"
+    ]
+  };
+
+  // Get the last sleep outcome and set speech bubble
+  useEffect(() => {
+    if (sleepHistory.length === 0) {
+      // Default message if no history
+      setSpeechBubble("Let's get started!");
+      return;
+    }
+
+    const lastEntry = sleepHistory[sleepHistory.length - 1];
+    const lastStatus = lastEntry?.status;
+
+    let messages = [];
+    
+    if (lastStatus === 'good') {
+      if (streak <= 2) {
+        messages = speechMessages.goodLowStreak;
+      } else {
+        messages = speechMessages.goodHighStreak;
+      }
+    } else if (lastStatus === 'late') {
+      messages = speechMessages.late;
+    } else if (lastStatus === 'freeze') {
+      messages = speechMessages.freeze;
+    } else {
+      messages = ["Let's do this!"];
+    }
+
+    // Randomly select a message
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    setSpeechBubble(messages[randomIndex]);
+  }, [sleepHistory, streak, username]);
   const logSleepEntry = (status) => {
     setSleepHistory((history) => {
       // Reset history after completing a full week (7 entries)
@@ -64,6 +130,11 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   };
 
   const handleMarkGood = () => {
+    // Store previous values before changes
+    const prevStreak = streak;
+    const prevWeeklyPoints = weeklyPoints;
+    const prevUnlockedOutfits = new Set(unlockedOutfits);
+    
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6;
@@ -76,8 +147,9 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     }
 
     // Only award points Sunday through Friday
+    let pointsEarned = 0;
     if (!isSaturday) {
-      const pointsEarned = streak > 0 ? 2 : 1;
+      pointsEarned = streak > 0 ? 2 : 1;
       setWeeklyPoints((p) => p + pointsEarned);
     }
 
@@ -86,9 +158,30 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
     setStreak((s) => s + 1);
     logSleepEntry('good');
+    
+    // Show daily recap after state updates (unless it's Saturday)
+    if (!isSaturday) {
+      setTimeout(() => {
+        const newStreak = prevStreak + 1;
+        const newWeeklyPoints = prevWeeklyPoints + pointsEarned;
+        // Calculate new unlocked outfits based on new streak
+        const newUnlockedOutfits = new Set(prevUnlockedOutfits);
+        outfitRequirements.forEach((outfit) => {
+          if (newStreak >= outfit.requiredStreak) {
+            newUnlockedOutfits.add(outfit.id);
+          }
+        });
+        showDailyRecapPopup(prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits);
+      }, 100);
+    }
   };
 
   const handleBreakStreak = () => {
+    // Store previous values
+    const prevStreak = streak;
+    const prevWeeklyPoints = weeklyPoints;
+    const prevUnlockedOutfits = new Set(unlockedOutfits);
+    
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6; 
@@ -105,12 +198,32 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
     setStreak(0);
     logSleepEntry('late');
+    
+    // Show daily recap after state updates (unless it's Saturday)
+    if (!isSaturday) {
+      setTimeout(() => {
+        // Calculate new unlocked outfits based on new streak (0)
+        const newUnlockedOutfits = new Set(prevUnlockedOutfits);
+        outfitRequirements.forEach((outfit) => {
+          if (0 >= outfit.requiredStreak) {
+            newUnlockedOutfits.add(outfit.id);
+          }
+        });
+        showDailyRecapPopup(prevStreak, 0, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, newUnlockedOutfits);
+      }, 100);
+    }
   };
 
   const handleUseFreeze = () => {
     if (freezes > 0) {
+      // Store previous values
+      const prevStreak = streak;
+      const prevWeeklyPoints = weeklyPoints;
+      const prevUnlockedOutfits = new Set(unlockedOutfits);
+      
       // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
       const currentDayIndex = sleepHistory.length % 7;
+      const isSaturday = currentDayIndex === 6;
       const isSunday = currentDayIndex === 0;
       const isStartingNewWeek = sleepHistory.length >= 7;
 
@@ -124,6 +237,14 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
       setFreeze((p) => p - 1);
       logSleepEntry('freeze');
+      
+      // Show daily recap after state updates (unless it's Saturday)
+      if (!isSaturday) {
+        setTimeout(() => {
+          // Freeze doesn't change streak, so unlocked outfits stay the same
+          showDailyRecapPopup(prevStreak, streak, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, prevUnlockedOutfits);
+        }, 100);
+      }
     }
   };
 
@@ -146,6 +267,64 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     return days[dayIndex];
   };
 
+  // Get the previous day's name for the log button
+  const getPreviousDay = () => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const currentDayIndex = sleepHistory.length % 7;
+    const previousDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+    return days[previousDayIndex];
+  };
+
+  // Outfit requirements
+  const outfitRequirements = [
+    { id: "default", label: "Basic Kit", requiredStreak: 0 },
+    { id: "pit", label: "Hack Whisp-stern", requiredStreak: 3 },
+    { id: "blue", label: "Blue Home Kit", requiredStreak: 7 },
+    { id: "gold", label: "Golden Captain Kit", requiredStreak: 14 },
+  ];
+
+  // Show daily recap popup
+  const showDailyRecapPopup = (prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits, matchWon = null, userFinalScore = null, opponentScore = null) => {
+    // Find newly unlocked outfits
+    const newlyUnlocked = [];
+    outfitRequirements.forEach((outfit) => {
+      if (!prevUnlockedOutfits.has(outfit.id) && newUnlockedOutfits.has(outfit.id)) {
+        newlyUnlocked.push(outfit);
+      }
+    });
+
+    // Find next outfit to unlock
+    let nextOutfit = null;
+    let daysToUnlock = null;
+    outfitRequirements.forEach((outfit) => {
+      if (!newUnlockedOutfits.has(outfit.id)) {
+        if (!nextOutfit || outfit.requiredStreak < nextOutfit.requiredStreak) {
+          nextOutfit = outfit;
+        }
+      }
+    });
+
+    if (nextOutfit) {
+      daysToUnlock = Math.max(0, nextOutfit.requiredStreak - newStreak);
+    }
+
+    setRecapData({
+      streakChanged: prevStreak !== newStreak,
+      prevStreak,
+      newStreak,
+      weeklyPointsChanged: prevWeeklyPoints !== newWeeklyPoints,
+      prevWeeklyPoints,
+      newWeeklyPoints,
+      newlyUnlocked,
+      nextOutfit,
+      daysToUnlock,
+      matchWon,
+      userFinalScore,
+      opponentScore,
+    });
+    setShowDailyRecap(true);
+  };
+
 
   return (
     <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
@@ -161,13 +340,38 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       </h1>
 
       {/* ⭐ Mascot container like Talking Tom */}
-      <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
+      <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex flex-col items-center justify-end shadow-inner border border-white/10 px-6 py-4 pb-8 min-h-0">
+        {/* Speech Bubble */}
+        {speechBubble && (
+          <div className="relative mb-3 w-full max-w-xs">
+            {/* Speech bubble */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-sm border border-white/10">
+              <p className="text-sm text-white text-center">
+                {speechBubble}
+              </p>
+            </div>
+            {/* Speech bubble tail */}
+            <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2">
+              <div className="w-3 h-3 bg-white/20 backdrop-blur-sm transform rotate-45 border-l border-b border-white/10"></div>
+            </div>
+          </div>
+        )}
+        
+        {/* Character */}
         {(() => {
           const isStreak = streak >= 2;
           let imageSrc;
           let imageSize;
           
-          if (selectedOutfit === "pit") {
+          // Show sad images if streak was just lost
+          if (showSad) {
+            if (selectedOutfit === "pit") {
+              imageSrc = whispPitsSadImg;
+            } else {
+              imageSrc = whispSadImg;
+            }
+            imageSize = "w-48 h-48";
+          } else if (selectedOutfit === "pit") {
             imageSrc = isStreak ? whispPitStreakImg : whispPitsDefaultImg;
             imageSize = isStreak ? "w-[200px] h-[200px]" : "w-48 h-48";
           } else {
@@ -220,7 +424,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       {/* Buttons like "Task icons" */}
       <div className="w-full bg-black/30 rounded-2xl p-4 mt-3 space-y-3">
         <p className="text-xs text-white/60 text-center">
-          Log your sleep outcome:
+          Log {getPreviousDay()}'s sleep outcome:
         </p>
 
         <div className="grid grid-cols-3 gap-2 text-sm">
@@ -244,6 +448,118 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           </button>
         </div>
       </div>
+
+      {/* Daily Recap Popup */}
+      {showDailyRecap && recapData && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Daily Recap</h2>
+              <p className="text-white/70 text-sm">Here's what changed today!</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {/* Streak update */}
+              {(recapData.streakChanged || recapData.matchWon !== null) && (
+                <div className="bg-black/30 rounded-2xl p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/70">Streak</span>
+                    <div className="flex items-center gap-2">
+                      {recapData.streakChanged ? (
+                        <>
+                          <span className="text-white/60">{recapData.prevStreak}</span>
+                          <span className="text-white">→</span>
+                        </>
+                      ) : null}
+                      <span className="text-2xl font-bold text-indigo-400">{recapData.newStreak}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Weekly Points update or reset message (Saturday) */}
+              {recapData.matchWon !== null ? (
+                // Saturday: Show weekly points reset message
+                <div className="bg-indigo-500/20 rounded-2xl p-4 border border-indigo-400/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/70">Weekly Points</span>
+                    <span className="text-2xl font-bold text-yellow-400">{recapData.prevWeeklyPoints}</span>
+                  </div>
+                  <p className="text-xs text-white/70 text-center mt-2">
+                    Weekly points will reset as we start a new week!
+                  </p>
+                </div>
+              ) : (
+                // Other days: Show weekly points update
+                recapData.weeklyPointsChanged && (
+                  <div className="bg-black/30 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70">Weekly Points</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/60">{recapData.prevWeeklyPoints}</span>
+                        <span className="text-white">→</span>
+                        <span className="text-2xl font-bold text-yellow-400">{recapData.newWeeklyPoints}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Newly unlocked outfits */}
+              {recapData.newlyUnlocked.length > 0 && (
+                <div className="bg-indigo-500/20 rounded-2xl p-4 border border-indigo-400/30">
+                  <p className="text-center text-sm text-white mb-2">
+                    <span className="font-semibold text-indigo-300">🎉 New Outfit Unlocked!</span>
+                  </p>
+                  {recapData.newlyUnlocked.map((outfit) => (
+                    <p key={outfit.id} className="text-center text-sm text-white font-semibold">
+                      {outfit.label}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Next outfit to unlock */}
+              {recapData.nextOutfit && recapData.daysToUnlock !== null && (
+                <div className="bg-white/10 rounded-2xl p-4 border border-white/20">
+                  {recapData.daysToUnlock === 0 ? (
+                    <p className="text-center text-sm text-white">
+                      <span className="font-semibold">You're ready to unlock {recapData.nextOutfit.label}!</span>
+                    </p>
+                  ) : (
+                    <p className="text-center text-sm text-white">
+                      Keep your streak for <span className="font-semibold text-indigo-300">{recapData.daysToUnlock} more day{recapData.daysToUnlock !== 1 ? 's' : ''}</span> to unlock <span className="font-semibold">{recapData.nextOutfit.label}</span>!
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {recapData.newlyUnlocked.length > 0 && onNavigateToCustomize && (
+                <button
+                  onClick={() => {
+                    setShowDailyRecap(false);
+                    onNavigateToCustomize();
+                  }}
+                  className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 font-semibold text-white shadow-lg shadow-emerald-500/40 transition"
+                >
+                  Locker
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowDailyRecap(false);
+                  setIsSaturdayRecap(false);
+                }}
+                className="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-semibold text-white shadow-lg shadow-indigo-500/40 transition"
+              >
+                Come back tomorrow
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Match Result Popup */}
       {showMatchResult && (
@@ -305,10 +621,52 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
             )}
 
             <button
-              onClick={() => setShowMatchResult(false)}
+              onClick={() => {
+                // Store match result data before closing (match result only shows on Saturday)
+                const matchResultData = {
+                  matchWon,
+                  userFinalScore,
+                  opponentScore,
+                };
+                
+                setShowMatchResult(false);
+                
+                // Always show daily recap after match result (match result only appears on Saturday)
+                // Store previous values for recap - need to get values before the sleep entry was logged
+                // Since we're on Saturday, the previous day index was 5 (Friday)
+                // But we need to get the values from before logging today's entry
+                const prevStreak = streak;
+                const prevWeeklyPoints = userFinalScore; // Use the saved final score before any changes
+                const prevUnlockedOutfits = new Set(unlockedOutfits);
+                
+                setTimeout(() => {
+                  const newStreak = streak;
+                  const newWeeklyPoints = weeklyPoints; // This will be reset for the new week
+                  // Calculate new unlocked outfits based on current streak
+                  const newUnlockedOutfits = new Set(prevUnlockedOutfits);
+                  outfitRequirements.forEach((outfit) => {
+                    if (newStreak >= outfit.requiredStreak) {
+                      newUnlockedOutfits.add(outfit.id);
+                    }
+                  });
+                  
+                  setIsSaturdayRecap(true);
+                  showDailyRecapPopup(
+                    prevStreak, 
+                    newStreak, 
+                    prevWeeklyPoints, 
+                    newWeeklyPoints, 
+                    prevUnlockedOutfits, 
+                    newUnlockedOutfits, 
+                    matchResultData.matchWon, 
+                    matchResultData.userFinalScore, 
+                    matchResultData.opponentScore
+                  );
+                }, 100);
+              }}
               className="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-semibold text-white shadow-lg shadow-indigo-500/40 transition"
             >
-              Continue
+              Next
             </button>
           </div>
         </div>
