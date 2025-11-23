@@ -1,5 +1,5 @@
 // src/screens/HistoryScreen.jsx
-function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
+function HistoryScreen({ streak, sleepHistory, weeklyPoints, totalPoints }) {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // Initialize 7 empty slots for the week
@@ -88,6 +88,14 @@ function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
         </p>
         <p className="text-white/70 text-xs">
           Earn 1 point for each time you sleep on schedule.
+        </p>
+      </div>
+
+      <div className="bg-black/30 rounded-2xl p-4 text-sm space-y-2">
+        <p className="font-semibold">Total Points</p>
+        <p className="text-3xl font-bold text-indigo-400">{totalPoints || 0} pts</p>
+        <p className="text-white/70 text-xs">
+          All-time points earned from sleeping on schedule.
         </p>
       </div>
     </div>
