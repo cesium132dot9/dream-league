@@ -8,9 +8,9 @@ import whispPitsSadImg from "../assets/whisp-pits-sad.png";
 import { useState, useEffect, useRef } from "react";
 import whispImg from "../assets/whisp.png";
 
-const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+const friendsPoints = [0, 1, 2, 3, 4, 5, 6]
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -138,19 +138,13 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6;
-    const isSunday = currentDayIndex === 0;
-    const isStartingNewWeek = sleepHistory.length >= 7;
-
-    // Reset weekly points when starting a new week (on Sunday)
-    if (isSunday && isStartingNewWeek) {
-      setWeeklyPoints(0);
-    }
 
     // Only award points Sunday through Friday
     let pointsEarned = 0;
     if (!isSaturday) {
-      pointsEarned = streak > 0 ? 2 : 1;
+      const pointsEarned = 1; // Always 1 point for sleeping on schedule
       setWeeklyPoints((p) => p + pointsEarned);
+      setTotalPoints((p) => p + pointsEarned);
     }
 
     // Check if it's Saturday and show match result
@@ -193,6 +187,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       setWeeklyPoints(0);
     }
 
+    const prevStreak = streak; 
+    const prevWeeklyPoints = weeklyPoints; 
+    const prevUnlockedOutfits = new Set(unlockedOutfits);
+    
     // Check if it's Saturday and show match result
     checkMatchDay();
 
@@ -232,6 +230,11 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         setWeeklyPoints(0);
       }
 
+      // Store previous values
+      const prevStreak = streak;
+      const prevWeeklyPoints = weeklyPoints;
+      const prevUnlockedOutfits = new Set(unlockedOutfits);
+      
       // Check if it's Saturday and show match result
       checkMatchDay();
 
@@ -246,6 +249,13 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         }, 100);
       }
     }
+  };
+
+  // Handle closing the match result popup
+  const handleCloseMatchPopup = () => {
+    setShowMatchResult(false);
+    // Reset weekly points for the new week
+    setWeeklyPoints(0);
   };
 
 

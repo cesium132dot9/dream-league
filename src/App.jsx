@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import HomeScreen from "./screens/HomeScreen";
+import LeagueScreen from "./screens/LeagueScreen";
+import LeagueLeaderboardScreen from "./screens/LeagueLeaderboardScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import CustomizeScreen from "./screens/CustomizeScreen";
 import BottomNav from "./components/BottomNav";
@@ -14,13 +16,16 @@ function App() {
   // demo state – later you can wire this up properly
   const [streak, setStreak] = useState(0);
   const [freezes, setFreeze] = useState(2);
-  const [targetBedtime, setTargetBedtime] = useState("23:00");
+  const [targetBedtime, setTargetBedtime] = useState("23:30");
   const [sleepHistory, setSleepHistory] = useState([]); // Array of {date, status: 'good'|'late'|'freeze'}
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [selectedOutfit, setSelectedOutfit] = useState("default"); // "default", "pit", etc.
   const [unlockedOutfits, setUnlockedOutfits] = useState(new Set(["default"])); // Permanently unlocked outfits
   const [showSad, setShowSad] = useState(false); // Show sad character after streak is lost
   const previousStreakRef = useRef(0); 
+  const [totalPoints, setTotalPoints] = useState(0); // Total points earned this season
+  const [joinedLeagues, setJoinedLeagues] = useState([]); // Leagues the user has joined
+  const [selectedLeague, setSelectedLeague] = useState(null); // League selected for leaderboard view 
 
   const handleCompleteOnboarding = (onboardingData) => {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
@@ -98,11 +103,35 @@ function App() {
               setSleepHistory={setSleepHistory}
               weeklyPoints={weeklyPoints}
               setWeeklyPoints={setWeeklyPoints}
+              totalPoints={totalPoints}
+              setTotalPoints={setTotalPoints}
               username={username}
               selectedOutfit={selectedOutfit}
               showSad={showSad}
               unlockedOutfits={unlockedOutfits}
               onNavigateToCustomize={() => setCurrentScreen("customize")}
+            />
+          )}
+          {currentScreen === "league" && (
+            <LeagueScreen
+              username={username}
+              weeklyPoints={weeklyPoints}
+              totalPoints={totalPoints}
+              joinedLeagues={joinedLeagues}
+              setJoinedLeagues={setJoinedLeagues}
+              onViewLeaderboard={(league) => {
+                setSelectedLeague(league);
+                setCurrentScreen("leaderboard");
+              }}
+            />
+          )}
+          {currentScreen === "leaderboard" && selectedLeague && (
+            <LeagueLeaderboardScreen
+              league={selectedLeague}
+              username={username}
+              weeklyPoints={weeklyPoints}
+              totalPoints={totalPoints}
+              onBack={() => setCurrentScreen("league")}
             />
           )}
           {currentScreen === "history" && (

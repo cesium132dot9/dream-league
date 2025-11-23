@@ -87,7 +87,7 @@ function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
           Earn points Sunday through Friday and see who has the most amount of points by Saturday!
         </p>
         <p className="text-white/70 text-xs">
-          Earn 1 point for time you sleep on schedule.
+          Earn 1 point for each time you sleep on schedule.
         </p>
       </div>
     </div>
