@@ -9,6 +9,7 @@ import BottomNav from "./components/BottomNav";
 function App() {
   const [currentScreen, setCurrentScreen] = useState("onboarding");
   const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [username, setUsername] = useState("Chen"); // Default username
 
   // demo state – later you can wire this up properly
   const [streak, setStreak] = useState(0);
@@ -21,6 +22,9 @@ function App() {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
     console.log("Onboarding complete:", onboardingData);
     setTargetBedtime(onboardingData.bedtime);
+    if (onboardingData.username) {
+      setUsername(onboardingData.username);
+    }
     setHasOnboarded(true);
     setCurrentScreen("home");
   };
@@ -51,6 +55,7 @@ function App() {
               setSleepHistory={setSleepHistory}
               weeklyPoints={weeklyPoints}
               setWeeklyPoints={setWeeklyPoints}
+              username={username}
             />
           )}
           {currentScreen === "history" && (
