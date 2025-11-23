@@ -1,17 +1,14 @@
 // src/screens/HomeScreen.jsx
 import whispImg from "../assets/whisp.png";
 
+const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
 function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints }) {
   const logSleepEntry = (status) => {
     setSleepHistory((history) => {
       // Reset history after completing a full week (7 entries)
-      const isResettingWeek = history.length >= 7;
+      const isResettingWeek = history.length > 6;
       const currentHistory = isResettingWeek ? [] : history;
-
-      // Reset weekly points when starting a new week
-      if (isResettingWeek) {
-        setWeeklyPoints(0);
-      }
 
       // For demo: create dates starting from this week's Sunday
       const today = new Date();
@@ -34,6 +31,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6;
+    const isStartingNewWeek = sleepHistory.length >= 6;
+
+    // Reset weekly points when starting a new week (on Sunday)
+    if (isSaturday && isStartingNewWeek) {
+      setWeeklyPoints(0);
+    }
 
     // Only award points Sunday through Friday
     if (!isSaturday) {
@@ -41,8 +44,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       setWeeklyPoints((p) => p + pointsEarned);
     }
 
+    // Award freeze when completing Saturday (winning the match week)
+    if (isSaturday) {
+      setFreeze((p) => p + 1);
+    }
+
     setStreak((s) => s + 1);
-    if ((streak + 1) % 3 === 0) setFreeze((p) => p + 1);
     logSleepEntry('good');
   };
 
@@ -69,20 +76,33 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     return `${displayHour}:${minutes} ${period}`;
   };
 
+  // Get the current day of the week based on sleep history
+  const getDayOfWeek = () => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayIndex = sleepHistory.length % 7;
+    return days[dayIndex];
+  };
+
   return (
     <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
-      
+
       {/* Title */}
       <h1 className="text-xl font-semibold mb-2">Dream League</h1>
-      <h2 className="text-lg font-medium mb-4 text-white/80">Tonight's Routine</h2>
+      <h2 className="text-lg font-medium mb-4 text-white/80">{getDayOfWeek()}'s Routine</h2>
 
       {/* ⭐ Mascot container like Talking Tom */}
       <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
-        <img
-          src={whispImg}
-          alt="Mascot"
-          className="w-48 h-48 object-contain drop-shadow-xl"
-        />
+        {streak >= 2 ? (
+          <div className="w-48 h-48 flex items-center justify-center bg-white/10 rounded-2xl">
+            <p className="text-white/60 text-center px-4">Placeholder for fired up mascot image</p>
+          </div>
+        ) : (
+          <img
+            src={whispImg}
+            alt="Mascot"
+            className="w-48 h-48 object-contain drop-shadow-xl"
+          />
+        )}
       </div>
 
       {/* Sleep + streak info */}
@@ -111,7 +131,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold text-yellow-400">{weeklyPoints}</p>
-            <p className="text-xs text-yellow-300">Match Day: Sat</p>
+            <p className="text-xs text-yellow-300">Matchday: Sat</p>
           </div>
         </div>
       </div>

@@ -77,8 +77,7 @@ function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
         <p className="font-semibold">Current streak</p>
         <p className="text-3xl font-bold">{streak} days</p>
         <p className="text-white/70 text-xs">
-          Keep it up! Every 3 days you earn a Freeze to protect your streak
-          on late nights.
+          Keep it up! Win a match week (complete Saturday) to earn a Freeze that protects your streak on late nights.
         </p>
       </div>
 
