@@ -4,9 +4,9 @@ import whispStreakImg from "../assets/whisp-streak.png";
 import { useState } from "react";
 import whispImg from "../assets/whisp.png";
 
-const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+const friendsPoints = [0, 1, 2, 3, 4, 5, 6]
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, username = "Chen" }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen" }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -65,18 +65,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
     const currentDayIndex = sleepHistory.length % 7;
     const isSaturday = currentDayIndex === 6;
-    const isSunday = currentDayIndex === 0;
-    const isStartingNewWeek = sleepHistory.length >= 7;
-
-    // Reset weekly points when starting a new week (on Sunday)
-    if (isSunday && isStartingNewWeek) {
-      setWeeklyPoints(0);
-    }
 
     // Only award points Sunday through Friday
     if (!isSaturday) {
-      const pointsEarned = streak > 0 ? 2 : 1;
+      const pointsEarned = 1; // Always 1 point for sleeping on schedule
       setWeeklyPoints((p) => p + pointsEarned);
+      setTotalPoints((p) => p + pointsEarned);
     }
 
     // Check if it's Saturday and show match result
@@ -87,17 +81,6 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   };
 
   const handleBreakStreak = () => {
-    // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
-    const currentDayIndex = sleepHistory.length % 7;
-    const isSaturday = currentDayIndex === 6; 
-    const isSunday = currentDayIndex === 0;
-    const isStartingNewWeek = sleepHistory.length >= 7;
-
-    // Reset weekly points when starting a new week (on Sunday)
-    if (isSunday && isStartingNewWeek) {
-      setWeeklyPoints(0);
-    }
-
     // Check if it's Saturday and show match result
     checkMatchDay();
 
@@ -107,22 +90,19 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
   const handleUseFreeze = () => {
     if (freezes > 0) {
-      // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
-      const currentDayIndex = sleepHistory.length % 7;
-      const isSunday = currentDayIndex === 0;
-      const isStartingNewWeek = sleepHistory.length >= 7;
-
-      // Reset weekly points when starting a new week (on Sunday)
-      if (isSunday && isStartingNewWeek) {
-        setWeeklyPoints(0);
-      }
-
       // Check if it's Saturday and show match result
       checkMatchDay();
 
       setFreeze((p) => p - 1);
       logSleepEntry('freeze');
     }
+  };
+
+  // Handle closing the match result popup
+  const handleCloseMatchPopup = () => {
+    setShowMatchResult(false);
+    // Reset weekly points for the new week
+    setWeeklyPoints(0);
   };
 
 
@@ -292,7 +272,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
             )}
 
             <button
-              onClick={() => setShowMatchResult(false)}
+              onClick={handleCloseMatchPopup}
               className="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-semibold text-white shadow-lg shadow-indigo-500/40 transition"
             >
               Continue
