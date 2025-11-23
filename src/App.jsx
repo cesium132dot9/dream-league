@@ -169,6 +169,7 @@ function App() {
               unlockedOutfits={unlockedOutfits}
               fakeUsers={fakeUsers}
               leaderboardTotalPoints={leaderboardTotalPoints}
+              joinedLeagues={joinedLeagues}
               onNavigateToCustomize={() => setCurrentScreen("customize")}
               onMatchdayComplete={updateFakeUsersOnMatchday}
             />

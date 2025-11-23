@@ -134,7 +134,7 @@ async function generateAIMessage(scenario, username, streak) {
   }
 }
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), fakeUsers = [], leaderboardTotalPoints = 0, onNavigateToCustomize, onMatchdayComplete }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), fakeUsers = [], leaderboardTotalPoints = 0, joinedLeagues = [], onNavigateToCustomize, onMatchdayComplete }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -321,21 +321,30 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       // Save the final score before any reset
       setUserFinalScore(weeklyPoints);
 
+      // Always award a freeze on Saturday, no matter what
+      setFreeze((p) => p + 1);
+
       // Generate opponent score
       const randomIndex = Math.floor(Math.random() * friendsPoints.length);
       const randomNum = friendsPoints[randomIndex];
       setOpponentScore(randomNum);
 
-      // Determine win/loss
+      // Determine win/loss (for display purposes only, freeze is already awarded)
       if (weeklyPoints >= randomNum) {
         setMatchWon(true);
-        setFreeze((p) => p + 1);
       } else {
         setMatchWon(false);
       }
-      
-      // Show match result popup
-      setShowMatchResult(true);
+
+      // Update fake users and leaderboard BEFORE showing match result popup
+      if (onMatchdayComplete) {
+        onMatchdayComplete(weeklyPoints);
+      }
+
+      // Only show match result popup if user has joined a league
+      if (joinedLeagues.length > 0) {
+        setShowMatchResult(true);
+      }
     }
   };
 
@@ -343,6 +352,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     // Store previous values before changes
     const prevStreak = streak;
     const prevWeeklyPoints = weeklyPoints;
+    const prevFreezes = freezes;
     const prevUnlockedOutfits = new Set(unlockedOutfits);
     
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
@@ -357,14 +367,15 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       setTotalPoints((p) => p + pointsEarned);
     }
 
-    // Check if it's Saturday and show match result
+    // Check if it's Saturday and show match result (this will award a freeze)
     checkMatchDay();
 
     setStreak((s) => s + 1);
     logSleepEntry('good');
-    
-    // Show daily recap after state updates (unless it's Saturday)
+
+    // Show daily recap after state updates
     if (!isSaturday) {
+      // Non-Saturday: Show daily recap normally
       setTimeout(() => {
         const newStreak = prevStreak + 1;
         const newWeeklyPoints = prevWeeklyPoints + pointsEarned;
@@ -377,13 +388,31 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         });
         showDailyRecapPopup(prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits);
       }, 100);
+    } else if (joinedLeagues.length === 0) {
+      // Saturday and not in a league: Show daily recap immediately with freeze info
+      setTimeout(() => {
+        const newStreak = prevStreak + 1;
+        const newWeeklyPoints = prevWeeklyPoints;
+        const newFreezes = freezes; // Freeze was already added in checkMatchDay
+        // Calculate new unlocked outfits based on new streak
+        const newUnlockedOutfits = new Set(prevUnlockedOutfits);
+        outfitRequirements.forEach((outfit) => {
+          if (newStreak >= outfit.requiredStreak) {
+            newUnlockedOutfits.add(outfit.id);
+          }
+        });
+        // Show freeze earned message (always true on Saturday)
+        showDailyRecapPopup(prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits, true, weeklyPoints, 0, false, prevFreezes, newFreezes);
+      }, 100);
     }
+    // If Saturday and in a league, daily recap will be shown after matchday popup closes
   };
 
   const handleBreakStreak = () => {
     // Store previous values
     const prevStreak = streak;
     const prevWeeklyPoints = weeklyPoints;
+    const prevFreezes = freezes;
     const prevUnlockedOutfits = new Set(unlockedOutfits);
     
     // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
@@ -402,9 +431,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
     setStreak(0);
     logSleepEntry('late');
-    
-    // Show daily recap after state updates (unless it's Saturday)
+
+    // Show daily recap after state updates
     if (!isSaturday) {
+      // Non-Saturday: Show daily recap normally
       setTimeout(() => {
         // Calculate new unlocked outfits based on new streak (0)
         const newUnlockedOutfits = new Set(prevUnlockedOutfits);
@@ -415,7 +445,21 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         });
         showDailyRecapPopup(prevStreak, 0, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, newUnlockedOutfits);
       }, 100);
+    } else if (joinedLeagues.length === 0) {
+      // Saturday and not in a league: Show daily recap immediately with freeze info
+      setTimeout(() => {
+        const newUnlockedOutfits = new Set(prevUnlockedOutfits);
+        const newFreezes = freezes; // Freeze was already added in checkMatchDay
+        outfitRequirements.forEach((outfit) => {
+          if (0 >= outfit.requiredStreak) {
+            newUnlockedOutfits.add(outfit.id);
+          }
+        });
+        // Show freeze earned message (always true on Saturday, even if streak was broken)
+        showDailyRecapPopup(prevStreak, 0, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, newUnlockedOutfits, true, weeklyPoints, 0, false, prevFreezes, newFreezes);
+      }, 100);
     }
+    // If Saturday and in a league, daily recap will be shown after matchday popup closes
   };
 
   const handleUseFreeze = () => {
@@ -442,14 +486,23 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
 
       setFreeze((p) => p - 1);
       logSleepEntry('freeze');
-      
-      // Show daily recap after state updates (unless it's Saturday)
+
+      // Show daily recap after state updates
       if (!isSaturday) {
+        // Non-Saturday: Show daily recap normally
         setTimeout(() => {
           // Freeze doesn't change streak, so unlocked outfits stay the same
           showDailyRecapPopup(prevStreak, streak, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, prevUnlockedOutfits, null, null, null, true, prevFreezes, freezes - 1);
         }, 100);
+      } else if (joinedLeagues.length === 0) {
+        // Saturday and not in a league: Show daily recap immediately with freeze info
+        // Freeze was already added in checkMatchDay, and we used one, so net is 0
+        setTimeout(() => {
+          const newFreezes = freezes - 1; // We used one, but got one from Saturday
+          showDailyRecapPopup(prevStreak, streak, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, prevUnlockedOutfits, true, weeklyPoints, 0, true, prevFreezes, newFreezes);
+        }, 100);
       }
+      // If Saturday and in a league, daily recap will be shown after matchday popup closes
     } else {
       // Show popup when user has no freezes
       setShowNoFreezesPopup(true);
@@ -793,6 +846,16 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                 </div>
               )}
 
+              {/* Freeze earned on Saturday (when not in a league) */}
+              {!recapData.usedFreeze && recapData.matchWon === true && recapData.prevFreezes !== null && recapData.newFreezes !== null && (
+                <div className="bg-sky-500/20 rounded-2xl p-4 mb-4 border border-sky-400/30">
+                  <div className="text-center mb-3">
+                    <div className="text-3xl mb-2">🧊</div>
+                    <span className="font-semibold text-sky-300">+1 Freeze</span> earned! 🧊
+                  </div>
+                </div>
+              )}
+
               {/* Weekly Points update or reset message (Saturday) */}
               {!recapData.usedFreeze && recapData.matchWon !== null ? (
                 // Saturday: Show weekly points reset message
@@ -891,7 +954,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           ...fakeUsers.map((user) => ({ name: user.name, points: user.totalPoints, isCurrentUser: false }))
         ];
 
-        // Sort by points (descending), then by name for consistency
+        // Sort by points (descending), then by name for consistency (alphabetical for ties)
         const sorted = allPlayers.sort((a, b) => {
           if (b.points !== a.points) {
             return b.points - a.points;
@@ -919,11 +982,20 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         const userEntry = leagueTable.find(p => p.isCurrentUser);
         const userPosition = userEntry ? userEntry.rank : 1;
 
-        // Get top 3 by rank (not index)
-        const top3 = leagueTable.filter(p => p.rank <= 3);
-
         // Check if user is in top 3
         const userInTop3 = userPosition <= 3;
+
+        // Get players to display based on whether user is in top 3
+        let playersToShow;
+        if (userInTop3) {
+          // User is in top 3: show only the top 3 (which includes the user)
+          // Get first 3 players by index (already sorted, handles ties alphabetically)
+          playersToShow = leagueTable.slice(0, 3);
+        } else {
+          // User is NOT in top 3: show exactly 3 players (not including user)
+          // Get first 3 players by index (already sorted, handles ties alphabetically)
+          playersToShow = leagueTable.slice(0, 3);
+        }
 
         return (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -936,7 +1008,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
               {/* League Table */}
               <div className="bg-black/30 rounded-2xl p-4 mb-4">
                 <div className="space-y-2">
-                  {top3.map((player, idx) => (
+                  {playersToShow.map((player, idx) => (
                     <div
                       key={idx}
                       className={`flex items-center justify-between p-2 rounded-xl ${
@@ -965,7 +1037,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                     </div>
                   ))}
 
-                  {/* Show user if not in top 3 */}
+                  {/* Show user if not in top 3 - but don't show in the list above */}
                   {!userInTop3 && (
                     <>
                       <div className="text-center text-white/40 text-xs py-1">...</div>
@@ -1009,15 +1081,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                   userFinalScore,
                   opponentScore,
                 };
-                
+
                 // If isSaturdayRecap is true, it means we were on Saturday when the match was triggered
                 // Only set flag to reset points if we were on Saturday/matchday
                 if (isSaturdayRecap) {
                   shouldResetPointsRef.current = true;
-                  // Update fake users on matchday - pass userFinalScore which is the weeklyPoints before reset
-                  if (onMatchdayComplete) {
-                    onMatchdayComplete(userFinalScore);
-                  }
+                  // Note: onMatchdayComplete is now called in checkMatchDay BEFORE showing the popup
                 }
                 setShowMatchResult(false);
                 
