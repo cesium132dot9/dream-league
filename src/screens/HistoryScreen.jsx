@@ -27,8 +27,7 @@ function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
     <div className="h-full p-5 space-y-4">
       <h1 className="text-xl font-semibold">Recent form</h1>
       <p className="text-sm text-white/70">
-        Your last week of "matches". Green = on time, blue = Freeze pass, red =
-        broken streak.
+        Your last week of sleep!
       </p>
 
       <div className="mt-3 bg-black/30 rounded-2xl p-4 space-y-4">
@@ -88,7 +87,7 @@ function HistoryScreen({ streak, sleepHistory, weeklyPoints }) {
           Earn points Sunday through Friday and see who has the most amount of points by Saturday!
         </p>
         <p className="text-white/70 text-xs">
-          Earn 1 point each time you sleep on schedule.
+          Earn 1 point for each time you sleep on schedule.
         </p>
       </div>
     </div>

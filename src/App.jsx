@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import HomeScreen from "./screens/HomeScreen";
 import LeagueScreen from "./screens/LeagueScreen";
@@ -19,6 +19,10 @@ function App() {
   const [targetBedtime, setTargetBedtime] = useState("23:30");
   const [sleepHistory, setSleepHistory] = useState([]); // Array of {date, status: 'good'|'late'|'freeze'}
   const [weeklyPoints, setWeeklyPoints] = useState(0);
+  const [selectedOutfit, setSelectedOutfit] = useState("default"); // "default", "pit", etc.
+  const [unlockedOutfits, setUnlockedOutfits] = useState(new Set(["default"])); // Permanently unlocked outfits
+  const [showSad, setShowSad] = useState(false); // Show sad character after streak is lost
+  const previousStreakRef = useRef(0); 
   const [totalPoints, setTotalPoints] = useState(0); // Total points earned this season
   const [joinedLeagues, setJoinedLeagues] = useState([]); // Leagues the user has joined
   const [selectedLeague, setSelectedLeague] = useState(null); // League selected for leaderboard view 
@@ -33,6 +37,45 @@ function App() {
     setHasOnboarded(true);
     setCurrentScreen("home");
   };
+
+  // Unlock outfits permanently when streak reaches requirements
+  useEffect(() => {
+    const outfitRequirements = [
+      { id: "default", requiredStreak: 0 },
+      { id: "pit", requiredStreak: 3 },
+      { id: "blue", requiredStreak: 7 },
+      { id: "gold", requiredStreak: 14 },
+    ];
+
+    outfitRequirements.forEach(({ id, requiredStreak }) => {
+      if (streak >= requiredStreak) {
+        setUnlockedOutfits((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(id);
+          return newSet;
+        });
+      }
+    });
+  }, [streak]);
+
+  // Detect when streak is lost and show sad character
+  useEffect(() => {
+    const previousStreak = previousStreakRef.current;
+    
+    // If streak goes from > 0 to 0, show sad character
+    if (previousStreak > 0 && streak === 0) {
+      setShowSad(true);
+    }
+    
+    // If streak is regained (goes from 0 to > 0), hide sad character
+    // This happens when user clicks "good" after losing streak
+    if (showSad && streak > 0) {
+      setShowSad(false);
+    }
+    
+    // Update previous streak ref
+    previousStreakRef.current = streak;
+  }, [streak, showSad]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -63,6 +106,10 @@ function App() {
               totalPoints={totalPoints}
               setTotalPoints={setTotalPoints}
               username={username}
+              selectedOutfit={selectedOutfit}
+              showSad={showSad}
+              unlockedOutfits={unlockedOutfits}
+              onNavigateToCustomize={() => setCurrentScreen("customize")}
             />
           )}
           {currentScreen === "league" && (
@@ -91,7 +138,12 @@ function App() {
             <HistoryScreen streak={streak} sleepHistory={sleepHistory} weeklyPoints={weeklyPoints} />
           )}
           {currentScreen === "customize" && (
-            <CustomizeScreen streak={streak} />
+            <CustomizeScreen 
+              streak={streak} 
+              selectedOutfit={selectedOutfit} 
+              setSelectedOutfit={setSelectedOutfit}
+              unlockedOutfits={unlockedOutfits}
+            />
           )}
         </div>
 
