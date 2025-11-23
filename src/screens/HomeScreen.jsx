@@ -1,10 +1,12 @@
 // src/screens/HomeScreen.jsx
+import whispDefaultImg from "../assets/whisp-default.png";
+import whispStreakImg from "../assets/whisp-streak.png";
 import { useState } from "react";
 import whispImg from "../assets/whisp.png";
 
 const friendsPoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, username = "Chen" }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -145,19 +147,27 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
 
       {/* Title */}
-      <h1 className="text-xl font-semibold mb-2">Dream League</h1>
-      <h2 className="text-lg font-medium mb-4 text-white/80">{getDayOfWeek()}'s Routine</h2>
+      <h1 
+        className="font-header text-white mb-4 whitespace-nowrap"
+        style={{
+          fontSize: `clamp(1.25rem, ${Math.max(1.5, 2.5 - (username.length + getDayOfWeek().length) * 0.1)}rem, 2.25rem)`
+        }}
+      >
+        {username}'s {getDayOfWeek()} Routine
+      </h1>
 
       {/* ⭐ Mascot container like Talking Tom */}
       <div className="relative bg-white/5 rounded-3xl w-full flex-1 flex items-center justify-center shadow-inner border border-white/10 px-6 py-4">
         {streak >= 2 ? (
-          <div className="w-48 h-48 flex items-center justify-center bg-white/10 rounded-2xl">
-            <p className="text-white/60 text-center px-4">Placeholder for fired up mascot image</p>
-          </div>
+          <img
+            src={whispStreakImg}
+            alt="Whisp Streak"
+            className="w-[200px] h-[200px] object-contain drop-shadow-xl"
+          />
         ) : (
           <img
-            src={whispImg}
-            alt="Mascot"
+            src={whispDefaultImg}
+            alt="Whisp"
             className="w-48 h-48 object-contain drop-shadow-xl"
           />
         )}

@@ -28,6 +28,7 @@ function OnboardingScreen({ onComplete }) {
   const [bedtime, setBedtime] = useState("23:30");
   const [wakeTime, setWakeTime] = useState("07:30");
   const [selectedMascot, setSelectedMascot] = useState(sleepMascots[0]);
+  const [username, setUsername] = useState("");
   const [prevPage, setPrevPage] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for back, 1 for forward
   
@@ -39,6 +40,8 @@ function OnboardingScreen({ onComplete }) {
   
   // Animation state for mascot intro page
   const [mascotIntroText, setMascotIntroText] = useState("");
+  const [showUsernameInput, setShowUsernameInput] = useState(false);
+  const [showMascotIntroButtons, setShowMascotIntroButtons] = useState(false);
   
   // Animation state for stats page
   const [statsText, setStatsText] = useState("");
@@ -50,7 +53,7 @@ function OnboardingScreen({ onComplete }) {
   const [showPointSystem, setShowPointSystem] = useState(false);
   
   // Animation state for dream squad page
-  const [dreamSquadSubtitleText, setDreamSquadSubtitleText] = useState("");
+  const [showDreamSquadSubtitle, setShowDreamSquadSubtitle] = useState(false);
   const [showBig3Customized, setShowBig3Customized] = useState(false);
   
   // Animation state for friends page
@@ -64,7 +67,7 @@ function OnboardingScreen({ onComplete }) {
   // Welcome page fade-in state
   const [showWelcome, setShowWelcome] = useState(false);
 
-  const totalPages = 9;
+  const totalPages = 10;
 
   const availableApps = ["TikTok", "Instagram", "YouTube", "Twitter/X", "Reddit", "Snapchat", "Facebook", "Netflix"];
 
@@ -93,12 +96,13 @@ function OnboardingScreen({ onComplete }) {
       setTimeout(() => {
         setLoadingFadeOut(true);
         setTimeout(() => {
-          onComplete({
-            selectedApps,
-            bedtime,
-            wakeTime,
-            selectedMascot,
-          });
+        onComplete({
+          selectedApps,
+          bedtime,
+          wakeTime,
+          selectedMascot,
+          username,
+        });
         }, 500); // Complete after fade-out animation
       }, 4500);
     }
@@ -120,9 +124,25 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 0: Welcome (Duolingo style)
   const renderWelcomePage = () => (
-    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 ${
+    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 relative ${
       showWelcome ? 'opacity-100' : 'opacity-0'
     }`}>
+      {/* Skip intro button - top right */}
+      <button
+        onClick={() => {
+          onComplete({
+            selectedApps,
+            bedtime,
+            wakeTime,
+            selectedMascot,
+            username,
+          });
+        }}
+        className="absolute top-4 right-4 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-sm text-white/80 font-medium transition z-10"
+      >
+        Skip intro
+      </button>
+
       {/* Mascot at top */}
       <div className="flex-1 flex items-center justify-center pt-12 pb-4">
         <img
@@ -173,7 +193,7 @@ function OnboardingScreen({ onComplete }) {
           <div className="bg-white/20 backdrop-blur-sm rounded-3xl px-5 py-4 shadow-sm border border-white/10 min-h-[3rem]">
             <p className="text-base text-white text-center">
               {mascotIntroText}
-              {mascotIntroText.length > 0 && mascotIntroText.length < "Hey! I'm Whisp.".length && (
+              {mascotIntroText.length > 0 && mascotIntroText.length < "Hey! I'm Whisp. What's your name?".length && (
                 <span className="animate-pulse">|</span>
               )}
             </p>
@@ -185,12 +205,71 @@ function OnboardingScreen({ onComplete }) {
         </div>
 
         {/* Mascot */}
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center mb-6">
           <img
             src={whispWelcomeImg}
             alt="Whisp"
             className="w-48 h-48 object-contain"
           />
+        </div>
+
+        {/* Username input - fades in after text finishes */}
+        <div className={`w-full max-w-sm transition-opacity duration-500 ${
+          showUsernameInput ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter your username"
+            className="w-full rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-indigo-400 transition"
+          />
+          <p className="text-xs text-white/60 mt-2 text-center">
+            This will be your Dream League username.
+          </p>
+        </div>
+      </div>
+
+      {/* Navigation buttons */}
+      <div className={`px-5 pb-8 space-y-3 transition-opacity duration-500 ${
+        showMascotIntroButtons ? 'opacity-100' : 'opacity-0'
+      }`}>
+        <button
+          onClick={handleNext}
+          className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 font-semibold text-base text-white transition shadow-lg shadow-emerald-500/40"
+        >
+          Nice to meet you!
+        </button>
+        {currentPage > 0 && (
+          <button
+            onClick={handleBack}
+            className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/20 font-semibold text-sm text-white transition"
+          >
+            Back
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Page 2: Welcome with name
+  const renderWelcomeNamePage = () => (
+    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-header text-white">
+            Welcome to Dream League, {username || "there"}!
+          </h1>
+          
+          {/* Whisp happy image */}
+          <div className="flex items-center justify-center">
+            <img
+              src={whispHappyImg}
+              alt="Whisp"
+              className="w-64 h-64 object-contain"
+            />
+          </div>
         </div>
       </div>
 
@@ -214,15 +293,15 @@ function OnboardingScreen({ onComplete }) {
     </div>
   );
 
-  // Page 2: Stats page
+  // Page 3: Stats page
   const renderStatsPage = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       {/* Centered content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {/* Speech bubble */}
-        <div className="relative mb-4">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
+        {/* Speech bubble - fixed height to prevent layout shift */}
+        <div className="relative mb-4 w-full max-w-sm">
           {/* Speech bubble */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl px-5 py-4 shadow-sm border border-white/10 min-h-[3rem]">
+          <div className="bg-white/20 backdrop-blur-sm rounded-3xl px-5 py-4 shadow-sm border border-white/10 h-20 flex items-center justify-center">
             <p className="text-base text-white text-center">
               {(() => {
                 const fullText = "Did you know that 36.3% of Canadian adults who get insufficient sleep report chronic stress?";
@@ -259,8 +338,8 @@ function OnboardingScreen({ onComplete }) {
           </div>
         </div>
 
-        {/* Mascot */}
-        <div className="flex items-center justify-center">
+        {/* Mascot - fixed position below speech bubble */}
+        <div className="flex items-center justify-center mt-4">
           <img
             src={whispTiredImg}
             alt="Whisp"
@@ -306,9 +385,11 @@ function OnboardingScreen({ onComplete }) {
     } else if (currentPage === 1) {
       // Reset and start animations for mascot intro page
       setMascotIntroText("");
+      setShowUsernameInput(false);
+      setShowMascotIntroButtons(false);
       
-      // Type out "Hey! I'm Whisp."
-      const introText = "Hey! I'm Whisp.";
+      // Type out "Hey! I'm Whisp. What's your name?"
+      const introText = "Hey! I'm Whisp. What's your name?";
       const introTimer = setTimeout(() => {
         let currentIndex = 0;
         const typeInterval = setInterval(() => {
@@ -317,6 +398,14 @@ function OnboardingScreen({ onComplete }) {
             currentIndex++;
           } else {
             clearInterval(typeInterval);
+            // Show username input after text finishes typing
+            setTimeout(() => {
+              setShowUsernameInput(true);
+              // Show buttons 1000ms after username input appears
+              setTimeout(() => {
+                setShowMascotIntroButtons(true);
+              }, 1000);
+            }, 300);
           }
         }, 50); // Speed of typing
       }, 200); // Small delay before starting
@@ -324,8 +413,8 @@ function OnboardingScreen({ onComplete }) {
       return () => {
         clearTimeout(introTimer);
       };
-    } else if (currentPage === 2) {
-      // Reset and start animations for stats page
+    } else if (currentPage === 3) {
+      // Reset and start animations for stats page (was page 2, now page 3)
       setStatsText("");
       setShowStatsButton(false);
       
@@ -350,8 +439,8 @@ function OnboardingScreen({ onComplete }) {
       return () => {
         clearTimeout(statsTimer);
       };
-    } else if (currentPage === 3) {
-      // Reset and start animations for league format page
+    } else if (currentPage === 4) {
+      // Reset and start animations for league format page (was page 3, now page 4)
       setLeagueSubtitleText("");
       setShowDozer(false);
       setShowPointSystem(false);
@@ -380,36 +469,22 @@ function OnboardingScreen({ onComplete }) {
       return () => {
         clearTimeout(leagueTimer);
       };
-    } else if (currentPage === 5) {
-      // Reset and start animations for dream squad page
-      setDreamSquadSubtitleText("");
+    } else if (currentPage === 6) {
+      // Reset and start animations for dream squad page (was page 5, now page 6)
+      setShowDreamSquadSubtitle(false);
       setShowBig3Customized(false);
       
-      // Step 1: Type out subtitle text
-      const subtitleText = "Turn your sleep streak into in-game swag!";
-      const typingSpeed = 50; // ms per character
-      
-      const dreamSquadTimer = setTimeout(() => {
-        let currentIndex = 0;
-        const typeInterval = setInterval(() => {
-          if (currentIndex <= subtitleText.length) {
-            setDreamSquadSubtitleText(subtitleText.slice(0, currentIndex));
-            currentIndex++;
-          } else {
-            clearInterval(typeInterval);
-            // Step 2: After typing completes, fade in image
-            setTimeout(() => {
-              setShowBig3Customized(true);
-            }, 100);
-          }
-        }, typingSpeed);
-      }, 200); // Small delay before starting
+      // Overlay customized image and fade in subtitle simultaneously after 1300ms
+      const imageOverlayTimer = setTimeout(() => {
+        setShowBig3Customized(true);
+        setShowDreamSquadSubtitle(true);
+      }, 1300);
       
       return () => {
-        clearTimeout(dreamSquadTimer);
+        clearTimeout(imageOverlayTimer);
       };
-    } else if (currentPage === 6) {
-      // Reset and start animations for friends page (was page 5, now page 6)
+    } else if (currentPage === 7) {
+      // Reset and start animations for friends page (was page 6, now page 7)
       setShowDozerFighting(false);
       setShowFriendsButtons(false);
       
@@ -425,8 +500,8 @@ function OnboardingScreen({ onComplete }) {
       return () => {
         clearTimeout(friendsTimer);
       };
-    } else if (currentPage === 7) {
-      // Reset and start animations for app blocking page (was page 6, now page 7)
+    } else if (currentPage === 8) {
+      // Reset and start animations for app blocking page (was page 7, now page 8)
       setShowMascot(false);
       setSpeechBubbleText("");
       setShowHeading(false);
@@ -468,7 +543,7 @@ function OnboardingScreen({ onComplete }) {
       setLeagueSubtitleText("");
       setShowDozer(false);
       setShowPointSystem(false);
-      setDreamSquadSubtitleText("");
+      setShowDreamSquadSubtitle(false);
       setShowBig3Customized(false);
       setShowDozerFighting(false);
       setShowFriendsButtons(false);
@@ -740,31 +815,44 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 5: Build Your Dream Squad
   const renderDreamSquadPage = () => (
-    <div className="h-full overflow-y-auto bg-gradient-to-b from-indigo-900 to-slate-900 p-5">
-      <div className="text-center space-y-2 mb-6 pt-6">
-        <h1 className="text-3xl font-header text-white mb-2">Build Your Dream Squad</h1>
-        <p className="text-sm text-white/70 min-h-[1.25rem]">
-          {dreamSquadSubtitleText}
-          {dreamSquadSubtitleText.length > 0 && dreamSquadSubtitleText.length < "Turn your sleep streak into in-game swag!".length && (
-            <span className="animate-pulse">|</span>
-          )}
-        </p>
-      </div>
+    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-6">
+        <div className="text-center space-y-6 max-w-sm w-full">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-header text-white mb-2">Build Your Dream Squad</h1>
+            <p className={`text-sm text-white/70 transition-opacity duration-700 ${
+              showDreamSquadSubtitle ? 'opacity-100' : 'opacity-0'
+            }`}>
+              Turn your sleep streak into in-game swag!
+            </p>
+          </div>
 
-      {/* Big 3 Customized image */}
-      <div className={`flex items-center justify-center my-6 transition-opacity duration-500 ${
-        showBig3Customized ? 'opacity-100' : 'opacity-0'
-      }`}>
-        <img
-          src={big3CustomizedImg}
-          alt="Big 3 Customized"
-          className="w-72 h-72 object-contain"
-        />
+          {/* Big 3 images - overlay transition */}
+          <div className="relative flex items-center justify-center my-6">
+            {/* Base image (big-3) - fades out */}
+            <img
+              src={big3Img}
+              alt="Big 3"
+              className={`w-[346px] h-[346px] object-contain transition-opacity duration-700 ${
+                showBig3Customized ? 'opacity-0' : 'opacity-100'
+              }`}
+            />
+            {/* Customized image overlay - fades in */}
+            <img
+              src={big3CustomizedImg}
+              alt="Big 3 Customized"
+              className={`absolute inset-0 w-[346px] h-[346px] object-contain transition-opacity duration-700 ${
+                showBig3Customized ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 
-  // Page 6: Friends & Leagues Splash (was page 5, now page 6)
+  // Page 7: Friends & Leagues Splash (index 7 in pages array)
   const renderFriendsPage = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       {/* Centered content */}
@@ -919,6 +1007,7 @@ function OnboardingScreen({ onComplete }) {
   const pages = [
     renderWelcomePage,
     renderMascotIntroPage,
+    renderWelcomeNamePage,
     renderStatsPage,
     renderLeagueFormatPage,
     renderLeagueSchedulePage,
@@ -976,8 +1065,8 @@ function OnboardingScreen({ onComplete }) {
         </div>
       </div>
 
-      {/* Navigation - hidden on welcome page, mascot intro page, stats page, and friends page */}
-      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 6 && (
+      {/* Navigation - hidden on welcome page, mascot intro page, welcome name page, stats page, and friends page */}
+      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 3 && currentPage !== 7 && (
         <div className="p-5 space-y-3 border-t border-white/10 bg-gradient-to-b from-indigo-900 to-slate-900">
           {/* Progress indicator */}
           <div className="flex gap-1 justify-center">
