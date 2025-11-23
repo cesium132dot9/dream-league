@@ -124,9 +124,25 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 0: Welcome (Duolingo style)
   const renderWelcomePage = () => (
-    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 ${
+    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 relative ${
       showWelcome ? 'opacity-100' : 'opacity-0'
     }`}>
+      {/* Skip intro button - top right */}
+      <button
+        onClick={() => {
+          onComplete({
+            selectedApps,
+            bedtime,
+            wakeTime,
+            selectedMascot,
+            username,
+          });
+        }}
+        className="absolute top-4 right-4 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-sm text-white/80 font-medium transition z-10"
+      >
+        Skip intro
+      </button>
+
       {/* Mascot at top */}
       <div className="flex-1 flex items-center justify-center pt-12 pb-4">
         <img
