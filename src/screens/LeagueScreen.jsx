@@ -1,5 +1,5 @@
 // src/screens/LeagueScreen.jsx
-function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagues, onViewLeaderboard }) {
+function LeagueScreen({ username, weeklyPoints, totalPoints, leaderboardWeeklyPoints, leaderboardTotalPoints, joinedLeagues, setJoinedLeagues, fakeUsers, onViewLeaderboard }) {
 
   // Sample leagues available to join
   const availableLeagues = [
@@ -7,14 +7,16 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
       id: 1,
       name: "Dream Team",
       emoji: "⭐",
-      members: 13, 
       description: "Elite sleepers only",
-      avgPoints: 6.0
     },
   ];
 
   const handleJoinLeague = (league) => {
-    setJoinedLeagues([...joinedLeagues, league]);
+    // Update league with correct member count when joining
+    const updatedLeague = {
+      ...league
+    };
+    setJoinedLeagues([...joinedLeagues, updatedLeague]);
   };
 
   const handleLeaveLeague = (leagueId) => {
@@ -23,6 +25,42 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
 
   const isJoined = (leagueId) => {
     return joinedLeagues.some((l) => l.id === leagueId);
+  };
+
+  // Calculate user's rank using standard competition ranking
+  const getUserRank = () => {
+    // Combine fake users and current user (use leaderboard points for ranking)
+    const allUsers = [
+      ...fakeUsers,
+      { name: username, weeklyPoints: leaderboardWeeklyPoints || 0, totalPoints: leaderboardTotalPoints || 0 }
+    ];
+
+    // Sort by total points (descending), then by name for consistency
+    const sorted = allUsers.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    // Find current user's position and apply standard competition ranking
+    const userIndex = sorted.findIndex(u => u.name === username);
+    if (userIndex === -1) return 1;
+
+    // Find rank - if points are equal, use the same rank
+    let rank = userIndex + 1;
+    const userTotalPoints = leaderboardTotalPoints || 0;
+    if (userIndex > 0 && sorted[userIndex - 1].totalPoints === userTotalPoints) {
+      // Find the first user with this score
+      for (let i = userIndex - 1; i >= 0; i--) {
+        if (sorted[i].totalPoints === userTotalPoints) {
+          rank = i + 1;
+        } else {
+          break;
+        }
+      }
+    }
+    return rank;
   };
 
   return (
@@ -62,7 +100,7 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
               <div className="bg-black/30 rounded-xl p-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-white/70">Your Rank</span>
-                  <span className="font-semibold text-yellow-400">#7</span>
+                  <span className="font-semibold text-yellow-400">#{getUserRank()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/70">Season Points</span>
@@ -71,10 +109,6 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
                 <div className="flex justify-between text-sm">
                   <span className="text-white/70">Weekly Points</span>
                   <span className="font-semibold">{weeklyPoints}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/70">Members</span>
-                  <span className="font-semibold">{league.members}</span>
                 </div>
               </div>
 
@@ -110,10 +144,6 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
                     <p className="text-xs text-white/60 mt-1">
                       {league.description}
                     </p>
-                    <div className="flex gap-4 mt-2 text-xs text-white/70">
-                      <span>👥 {league.members} members</span>
-                      <span>📊 {league.avgPoints} avg pts</span>
-                    </div>
                   </div>
                 </div>
                 <button
@@ -133,9 +163,7 @@ function LeagueScreen({ weeklyPoints, totalPoints, joinedLeagues, setJoinedLeagu
         <ul className="text-white/70 text-xs space-y-1 list-disc list-inside">
           <li>Join leagues to compete with other users</li>
           <li>Your season points determine your rank</li>
-          <li>Earn season points every week</li>
-          <li>Top 3 players earn special badges</li>
-          <li>You can join multiple leagues</li>
+          <li>Earn points every week</li>
         </ul>
       </div>
     </div>

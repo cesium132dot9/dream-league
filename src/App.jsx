@@ -25,7 +25,55 @@ function App() {
   const previousStreakRef = useRef(0); 
   const [totalPoints, setTotalPoints] = useState(0); // Total points earned this season
   const [joinedLeagues, setJoinedLeagues] = useState([]); // Leagues the user has joined
-  const [selectedLeague, setSelectedLeague] = useState(null); // League selected for leaderboard view 
+  const [selectedLeague, setSelectedLeague] = useState(null); // League selected for leaderboard view
+  
+  // Leaderboard points - only update on matchday
+  const [leaderboardWeeklyPoints, setLeaderboardWeeklyPoints] = useState(0);
+  const [leaderboardTotalPoints, setLeaderboardTotalPoints] = useState(0);
+  
+  // Fake users for leaderboard - all start at 0, accumulate points on matchday
+  const [fakeUsers, setFakeUsers] = useState(() => {
+    const initialUsers = [
+      { name: "Lionel Meowssi", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Slotan Ibrahimovic", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Catstiano Ronaldo", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Thierry Hungry", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Zinedine Zleep", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Luka Modrobinć", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Ninja Turtle", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Justin Fung", weeklyPoints: 0, totalPoints: 0 }, // Always stays at 0
+      { name: "Ronaldingo", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Neymaraptor", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Wayne Roo-kney", weeklyPoints: 0, totalPoints: 0 },
+      { name: "Kevin De Br-owl-ne", weeklyPoints: 0, totalPoints: 0 },
+    ];
+    return initialUsers;
+  });
+  
+  // Update fake users and user's leaderboard points on matchday (Saturday)
+  const updateFakeUsersOnMatchday = (userWeeklyPoints) => {
+    // Update user's leaderboard points with the weekly points from matchday
+    const pointsToAdd = userWeeklyPoints !== undefined ? userWeeklyPoints : weeklyPoints;
+    setLeaderboardWeeklyPoints(pointsToAdd);
+    setLeaderboardTotalPoints((prev) => prev + pointsToAdd);
+    
+    // Update fake users
+    setFakeUsers((prevUsers) => {
+      return prevUsers.map((user) => {
+        // Justin Fung always gets 0 points
+        if (user.name === "Justin Fung") {
+          return { ...user, weeklyPoints: 0 };
+        }
+        // Other users get random points 0-6
+        const randomPoints = Math.floor(Math.random() * 7); // 0 to 6
+        return {
+          ...user,
+          weeklyPoints: randomPoints,
+          totalPoints: user.totalPoints + randomPoints,
+        };
+      });
+    });
+  }; 
 
   const handleCompleteOnboarding = (onboardingData) => {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
@@ -64,13 +112,18 @@ function App() {
     
     // If streak goes from > 0 to 0, show sad character
     if (previousStreak > 0 && streak === 0) {
-      setShowSad(true);
+      // Use setTimeout to avoid cascading renders warning
+      setTimeout(() => {
+        setShowSad(true);
+      }, 0);
     }
     
     // If streak is regained (goes from 0 to > 0), hide sad character
     // This happens when user clicks "good" after losing streak
     if (showSad && streak > 0) {
-      setShowSad(false);
+      setTimeout(() => {
+        setShowSad(false);
+      }, 0);
     }
     
     // Update previous streak ref
@@ -110,6 +163,7 @@ function App() {
               showSad={showSad}
               unlockedOutfits={unlockedOutfits}
               onNavigateToCustomize={() => setCurrentScreen("customize")}
+              onMatchdayComplete={updateFakeUsersOnMatchday}
             />
           )}
           {currentScreen === "league" && (
@@ -117,8 +171,11 @@ function App() {
               username={username}
               weeklyPoints={weeklyPoints}
               totalPoints={totalPoints}
+              leaderboardWeeklyPoints={leaderboardWeeklyPoints}
+              leaderboardTotalPoints={leaderboardTotalPoints}
               joinedLeagues={joinedLeagues}
               setJoinedLeagues={setJoinedLeagues}
+              fakeUsers={fakeUsers}
               onViewLeaderboard={(league) => {
                 setSelectedLeague(league);
                 setCurrentScreen("leaderboard");
@@ -129,8 +186,9 @@ function App() {
             <LeagueLeaderboardScreen
               league={selectedLeague}
               username={username}
-              weeklyPoints={weeklyPoints}
-              totalPoints={totalPoints}
+              weeklyPoints={leaderboardWeeklyPoints}
+              totalPoints={leaderboardTotalPoints}
+              fakeUsers={fakeUsers}
               onBack={() => setCurrentScreen("league")}
             />
           )}

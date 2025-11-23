@@ -1,23 +1,8 @@
 // src/screens/LeagueLeaderboardScreen.jsx
 
-function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, onBack }) {
-  // Generate fake leaderboard data for demo
+function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, fakeUsers, onBack }) {
+  // Generate leaderboard with standard competition ranking (tied ranks)
   const generateLeaderboard = () => {
-    const fakeUsers = [
-      { name: "Lionel Meowssi", weeklyPoints: 8, totalPoints: 45 },
-      { name: "Slotan Ibrahimovic", weeklyPoints: 6, totalPoints: 42 },
-      { name: "Catstiano Ronaldo", weeklyPoints: 10, totalPoints: 38 },
-      { name: "Thierry Hungry", weeklyPoints: 7, totalPoints: 35 },
-      { name: "Zinedine Zleep", weeklyPoints: 5, totalPoints: 33 },
-      { name: "Luka Modrobinć", weeklyPoints: 9, totalPoints: 31 },
-      { name: "Ninja Turtle", weeklyPoints: 4, totalPoints: 28 },
-      { name: "Justin Fung", weeklyPoints: 0, totalPoints: 0 },
-      { name: "Ronaldingo", weeklyPoints: 6, totalPoints: 24 },
-      { name: "Neymaraptor", weeklyPoints: 8, totalPoints: 22 },
-      { name: "Wayne Roo-kney", weeklyPoints: 5, totalPoints: 20 },
-      { name: "Kevin De Br-owl-ne", weeklyPoints: 3, totalPoints: 18 },
-    ];
-
     // Add current user to the list
     const currentUser = {
       name: username,
@@ -28,8 +13,30 @@ function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, 
 
     const allUsers = [...fakeUsers, currentUser];
 
-    // Sort by total points (descending)
-    return allUsers.sort((a, b) => b.totalPoints - a.totalPoints);
+    // Sort by total points (descending), then by name for consistency
+    const sorted = allUsers.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    // Apply standard competition ranking (tied ranks)
+    return sorted.map((user, index) => {
+      // Find the rank - if points are equal, use the same rank
+      let rank = index + 1;
+      if (index > 0 && sorted[index - 1].totalPoints === user.totalPoints) {
+        // Find the first user with this score
+        for (let i = index - 1; i >= 0; i--) {
+          if (sorted[i].totalPoints === user.totalPoints) {
+            rank = i + 1;
+          } else {
+            break;
+          }
+        }
+      }
+      return { ...user, rank };
+    });
   };
 
   const leaderboardData = generateLeaderboard();
@@ -37,14 +44,15 @@ function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       <div className="p-5 pb-3">
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-4 relative">
           <button
             onClick={onBack}
-            className="mr-3 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"
+            className="relative z-10 mr-3 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+            type="button"
           >
             <span className="text-xl">←</span>
           </button>
-          <h1 className="text-xl font-semibold flex-1 text-center -ml-10">
+          <h1 className="text-xl font-semibold flex-1 text-center -ml-10 pointer-events-none">
             {league.emoji} {league.name}
           </h1>
         </div>
@@ -63,7 +71,7 @@ function LeagueLeaderboardScreen({ league, username, weeklyPoints, totalPoints, 
 
           {/* Leaderboard Rows */}
           {leaderboardData.map((user, index) => {
-            const position = index + 1;
+            const position = user.rank;
             const isCurrentUser = user.isCurrentUser;
 
             return (

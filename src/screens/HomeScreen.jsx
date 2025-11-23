@@ -18,7 +18,7 @@ import whispImg from "../assets/whisp.png";
 
 const friendsPoints = [0, 1, 2, 3, 4, 5, 6]
 
-function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize }) {
+function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, sleepHistory, setSleepHistory, weeklyPoints, setWeeklyPoints, totalPoints, setTotalPoints, username = "Chen", selectedOutfit = "default", showSad = false, unlockedOutfits = new Set(["default"]), onNavigateToCustomize, onMatchdayComplete }) {
   const [showMatchResult, setShowMatchResult] = useState(false);
   const [matchWon, setMatchWon] = useState(false);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -789,6 +789,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                 // Only set flag to reset points if we were on Saturday/matchday
                 if (isSaturdayRecap) {
                   shouldResetPointsRef.current = true;
+                  // Update fake users on matchday - pass userFinalScore which is the weeklyPoints before reset
+                  if (onMatchdayComplete) {
+                    onMatchdayComplete(userFinalScore);
+                  }
                 }
                 setShowMatchResult(false);
                 
