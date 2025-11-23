@@ -3,16 +3,19 @@ import { useState } from "react";
 import whispDefaultImg from "../assets/whisp-default.png";
 import whispPitsDefaultImg from "../assets/whisp-pits-default.png";
 import whispPitStreakImg from "../assets/whisp-pit-streak.png";
+import napsterHappyImg from "../assets/napster-happy.png";
+import dozerHappyImg from "../assets/dozer-happy.png";
 
 function CustomizeScreen({ streak, selectedOutfit, setSelectedOutfit, unlockedOutfits = new Set(["default"]) }) {
   const outfits = [
     { 
       id: "default", 
-      label: "Basic Kit", 
+      label: "Whisp", 
       requiredStreak: 0,
       defaultImg: whispDefaultImg,
       streakImg: null, // Uses default streak image
-      description: "Default kit."
+      description: "Default kit.",
+      unlockedDescription: "Hoo?"
     },
     { 
       id: "pit", 
@@ -20,23 +23,26 @@ function CustomizeScreen({ streak, selectedOutfit, setSelectedOutfit, unlockedOu
       requiredStreak: 3,
       defaultImg: whispPitsDefaultImg,
       streakImg: whispPitStreakImg,
-      description: "Unlock at 3-day streak."
+      description: "Unlock at 3-day streak.",
+      unlockedDescription: "The world is your canvas!"
     },
     { 
       id: "blue", 
-      label: "Blue Home Kit", 
+      label: "Napster", 
       requiredStreak: 7,
-      defaultImg: whispDefaultImg, // Placeholder - replace with actual image when available
+      defaultImg: napsterHappyImg,
       streakImg: null,
-      description: "Unlock at 7-day streak."
+      description: "Unlock at 7-day streak.",
+      unlockedDescription: "Just purr-fect!"
     },
     { 
       id: "gold", 
-      label: "Golden Captain Kit", 
+      label: "Dozer", 
       requiredStreak: 14,
-      defaultImg: whispDefaultImg, // Placeholder - replace with actual image when available
+      defaultImg: dozerHappyImg,
       streakImg: null,
-      description: "Unlock at 14-day streak."
+      description: "Unlock at 14-day streak.",
+      unlockedDescription: "Zzz..."
     },
   ];
 
@@ -112,9 +118,11 @@ function CustomizeScreen({ streak, selectedOutfit, setSelectedOutfit, unlockedOu
                   <p className="font-semibold mb-1">{outfit.label}</p>
                   <p className="text-[11px] text-white/70">
                     {outfit.requiredStreak === 0
-                      ? "Default kit."
+                      ? unlocked && outfit.unlockedDescription
+                        ? outfit.unlockedDescription
+                        : "Default kit."
                       : unlocked
-                      ? "Unlocked!"
+                      ? outfit.unlockedDescription || "Unlocked!"
                       : `Unlock at ${outfit.requiredStreak}-day streak.`}
                   </p>
                 </div>

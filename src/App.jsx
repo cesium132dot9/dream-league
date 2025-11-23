@@ -135,7 +135,7 @@ function App() {
             />
           )}
           {currentScreen === "history" && (
-            <HistoryScreen streak={streak} sleepHistory={sleepHistory} weeklyPoints={weeklyPoints} />
+            <HistoryScreen streak={streak} sleepHistory={sleepHistory} weeklyPoints={weeklyPoints} totalPoints={totalPoints} />
           )}
           {currentScreen === "customize" && (
             <CustomizeScreen 

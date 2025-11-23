@@ -5,6 +5,14 @@ import whispPitsDefaultImg from "../assets/whisp-pits-default.png";
 import whispPitStreakImg from "../assets/whisp-pit-streak.png";
 import whispSadImg from "../assets/whisp-sad.png";
 import whispPitsSadImg from "../assets/whisp-pits-sad.png";
+import napsterHappyImg from "../assets/napster-happy.png";
+import napsterDefaultImg from "../assets/napster-default.png";
+import napsterStreakImg from "../assets/napster-streak.png";
+import napsterSadImg from "../assets/napster-sad.png";
+import dozerHappyImg from "../assets/dozer-happy.png";
+import dozerDefaultImg from "../assets/dozer-happy.png";
+import dozerStreakImg from "../assets/dozer-streak.png";
+import dozerSadImg from "../assets/dozer-sad.png";
 import { useState, useEffect, useRef } from "react";
 import whispImg from "../assets/whisp.png";
 
@@ -21,6 +29,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
   const previousValuesRef = useRef({ streak: 0, weeklyPoints: 0, unlockedOutfits: new Set(["default"]) });
   const [isSaturdayRecap, setIsSaturdayRecap] = useState(false);
   const shouldResetPointsRef = useRef(false);
+  const [showNoFreezesPopup, setShowNoFreezesPopup] = useState(false);
+  const [hasShownFirstDayTransition, setHasShownFirstDayTransition] = useState(false);
+  // Show transition immediately on first load if no sleep history
+  const [showDayTransition, setShowDayTransition] = useState(sleepHistory.length === 0);
 
   // Speech bubble messages
   const speechMessages = {
@@ -48,6 +60,16 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       "FREEZE!"
     ]
   };
+
+  // Show first day transition when user first arrives
+  useEffect(() => {
+    if (sleepHistory.length === 0 && !hasShownFirstDayTransition) {
+      setHasShownFirstDayTransition(true);
+      setTimeout(() => {
+        setShowDayTransition(false);
+      }, 2500);
+    }
+  }, [sleepHistory.length, hasShownFirstDayTransition]);
 
   // Get the last sleep outcome and set speech bubble
   useEffect(() => {
@@ -235,6 +257,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       // Store previous values
       const prevStreak = streak;
       const prevWeeklyPoints = weeklyPoints;
+      const prevFreezes = freezes;
       const prevUnlockedOutfits = new Set(unlockedOutfits);
       
       // Check which day we're on (0=Sun, 1=Mon, ..., 6=Sat)
@@ -258,9 +281,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       if (!isSaturday) {
         setTimeout(() => {
           // Freeze doesn't change streak, so unlocked outfits stay the same
-          showDailyRecapPopup(prevStreak, streak, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, prevUnlockedOutfits);
+          showDailyRecapPopup(prevStreak, streak, prevWeeklyPoints, weeklyPoints, prevUnlockedOutfits, prevUnlockedOutfits, null, null, null, true, prevFreezes, freezes - 1);
         }, 100);
       }
+    } else {
+      // Show popup when user has no freezes
+      setShowNoFreezesPopup(true);
     }
   };
 
@@ -298,16 +324,25 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
     return days[previousDayIndex];
   };
 
+  // Get the day we just logged sleep for (the previous day)
+  const getJustLoggedDay = () => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    // After logging sleep, sleepHistory.length increases, so the day we just logged is the previous day
+    const currentDayIndex = sleepHistory.length % 7;
+    const previousDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+    return days[previousDayIndex];
+  };
+
   // Outfit requirements
   const outfitRequirements = [
-    { id: "default", label: "Basic Kit", requiredStreak: 0 },
+    { id: "default", label: "Whisp", requiredStreak: 0 },
     { id: "pit", label: "Hack Whisp-stern", requiredStreak: 3 },
-    { id: "blue", label: "Blue Home Kit", requiredStreak: 7 },
-    { id: "gold", label: "Golden Captain Kit", requiredStreak: 14 },
+    { id: "blue", label: "Napster", requiredStreak: 7 },
+    { id: "gold", label: "Dozer", requiredStreak: 14 },
   ];
 
   // Show daily recap popup
-  const showDailyRecapPopup = (prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits, matchWon = null, userFinalScore = null, opponentScore = null) => {
+  const showDailyRecapPopup = (prevStreak, newStreak, prevWeeklyPoints, newWeeklyPoints, prevUnlockedOutfits, newUnlockedOutfits, matchWon = null, userFinalScore = null, opponentScore = null, usedFreeze = false, prevFreezes = null, newFreezes = null) => {
     // Find newly unlocked outfits
     const newlyUnlocked = [];
     outfitRequirements.forEach((outfit) => {
@@ -331,6 +366,9 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       daysToUnlock = Math.max(0, nextOutfit.requiredStreak - newStreak);
     }
 
+    // Get the day being recapped (previous day)
+    const recapDay = getPreviousDay();
+
     setRecapData({
       streakChanged: prevStreak !== newStreak,
       prevStreak,
@@ -344,14 +382,36 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
       matchWon,
       userFinalScore,
       opponentScore,
+      usedFreeze,
+      prevFreezes,
+      newFreezes,
+      recapDay,
     });
     setShowDailyRecap(true);
   };
 
 
   return (
-    <div className="h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto">
-
+    <>
+      {/* Day Transition Screen - Show first, before home content */}
+      {showDayTransition && (
+        <div className="fixed inset-0 bg-gradient-to-b from-indigo-900 to-slate-900 flex items-center justify-center z-50 animate-fade-in">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-3">
+              {getDayOfWeek()} Morning
+            </h1>
+            <p className="text-xl text-white/70">
+              {sleepHistory.length === 0 
+                ? "Welcome! Let's start your sleep journey."
+                : `Enter ${getJustLoggedDay()}'s sleep`}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Home Screen Content - Hidden when transition is showing */}
+      <div className={`h-full flex flex-col items-center px-5 pt-4 pb-5 overflow-y-auto ${showDayTransition ? 'opacity-0 pointer-events-none' : ''}`}>
+      
       {/* Title */}
       <h1 
         className="font-header text-white mb-4 whitespace-nowrap"
@@ -390,6 +450,10 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           if (showSad) {
             if (selectedOutfit === "pit") {
               imageSrc = whispPitsSadImg;
+            } else if (selectedOutfit === "blue") {
+              imageSrc = napsterSadImg;
+            } else if (selectedOutfit === "gold") {
+              imageSrc = dozerSadImg;
             } else {
               imageSrc = whispSadImg;
             }
@@ -397,8 +461,16 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           } else if (selectedOutfit === "pit") {
             imageSrc = isStreak ? whispPitStreakImg : whispPitsDefaultImg;
             imageSize = isStreak ? "w-[200px] h-[200px]" : "w-48 h-48";
+          } else if (selectedOutfit === "blue") {
+            // Napster
+            imageSrc = isStreak ? napsterStreakImg : napsterDefaultImg;
+            imageSize = isStreak ? "w-[200px] h-[200px]" : "w-48 h-48";
+          } else if (selectedOutfit === "gold") {
+            // Dozer
+            imageSrc = isStreak ? dozerStreakImg : dozerDefaultImg;
+            imageSize = isStreak ? "w-[200px] h-[200px]" : "w-48 h-48";
           } else {
-            // Default outfit
+            // Default outfit (Whisp)
             imageSrc = isStreak ? whispStreakImg : whispDefaultImg;
             imageSize = isStreak ? "w-[200px] h-[200px]" : "w-48 h-48";
           }
@@ -406,7 +478,7 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           return (
             <img
               src={imageSrc}
-              alt="Whisp"
+              alt="Character"
               className={`${imageSize} object-contain drop-shadow-xl`}
             />
           );
@@ -472,23 +544,53 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
         </div>
       </div>
 
+
+      {/* No Freezes Popup */}
+      {showNoFreezesPopup && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-3">🧊</div>
+              <h2 className="text-2xl font-bold text-white mb-2">No Freezes Remaining</h2>
+              <p className="text-white/70 text-sm">You don't have any freezes to use right now.</p>
+            </div>
+
+            <div className="bg-sky-500/20 rounded-2xl p-4 mb-6 border border-sky-400/30">
+              <p className="text-center text-sm text-white mb-2">
+                <span className="font-semibold text-sky-300">How to earn a Freeze:</span>
+              </p>
+              <p className="text-center text-xs text-white/70">
+                Win a matchweek on Saturday! Complete your sleep schedule Sunday through Friday, then beat your opponent on Matchday Saturday to earn +1 Freeze.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowNoFreezesPopup(false)}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl py-3 font-semibold text-white transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Daily Recap Popup */}
       {showDailyRecap && recapData && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10 animate-fade-in">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-white mb-2">Daily Recap</h2>
-              <p className="text-white/70 text-sm">Here's what changed today!</p>
+              <p className="text-white/70 text-sm">{recapData.recapDay}'s Summary</p>
             </div>
 
             <div className="space-y-4 mb-6">
               {/* Streak update */}
-              {(recapData.streakChanged || recapData.matchWon !== null) && (
+              {(recapData.streakChanged || recapData.matchWon !== null || recapData.usedFreeze) && (
                 <div className="bg-black/30 rounded-2xl p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-white/70">Streak</span>
                     <div className="flex items-center gap-2">
-                      {recapData.streakChanged ? (
+                      {recapData.streakChanged && !recapData.usedFreeze ? (
                         <>
                           <span className="text-white/60">{recapData.prevStreak}</span>
                           <span className="text-white">→</span>
@@ -500,8 +602,33 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                 </div>
               )}
 
+              {/* Freeze used message */}
+              {recapData.usedFreeze && (
+                <div className="bg-sky-500/20 rounded-2xl p-4 border border-sky-400/30">
+                  <div className="text-center mb-3">
+                    <div className="text-3xl mb-2">🧊</div>
+                    <p className="text-sm font-semibold text-sky-300">Freeze Used!</p>
+                    <p className="text-xs text-white/70 mt-1">Your streak was protected</p>
+                  </div>
+                  <div className="bg-black/30 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70 text-xs">Streak</span>
+                      <span className="text-lg font-bold text-indigo-400">Protected at {recapData.newStreak}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70 text-xs">Weekly Points</span>
+                      <span className="text-lg font-bold text-white/60">No change ({recapData.newWeeklyPoints})</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70 text-xs">Freezes Remaining</span>
+                      <span className="text-lg font-bold text-sky-300">{recapData.newFreezes}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Weekly Points update or reset message (Saturday) */}
-              {recapData.matchWon !== null ? (
+              {!recapData.usedFreeze && recapData.matchWon !== null ? (
                 // Saturday: Show weekly points reset message
                 <div className="bg-indigo-500/20 rounded-2xl p-4 border border-indigo-400/30">
                   <div className="flex items-center justify-between mb-2">
@@ -513,8 +640,8 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                   </p>
                 </div>
               ) : (
-                // Other days: Show weekly points update
-                recapData.weeklyPointsChanged && (
+                // Other days: Show weekly points update (only if freeze wasn't used)
+                !recapData.usedFreeze && recapData.weeklyPointsChanged && (
                   <div className="bg-black/30 rounded-2xl p-4">
                     <div className="flex items-center justify-between">
                       <span className="text-white/70">Weekly Points</span>
@@ -574,6 +701,12 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
                 onClick={() => {
                   setShowDailyRecap(false);
                   setIsSaturdayRecap(false);
+                  // Show day transition
+                  setShowDayTransition(true);
+                  // Hide transition after 2.5 seconds
+                  setTimeout(() => {
+                    setShowDayTransition(false);
+                  }, 2500);
                 }}
                 className="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 font-semibold text-white shadow-lg shadow-indigo-500/40 transition"
               >
@@ -699,8 +832,8 @@ function HomeScreen({ streak, freezes, setStreak, setFreeze, targetBedtime, slee
           </div>
         </div>
       )}
-
-    </div>
+      </div>
+    </>
   );
 }
 
