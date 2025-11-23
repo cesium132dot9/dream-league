@@ -6,6 +6,7 @@ import whispSittingImg from "../assets/whisp-sitting.png";
 import whispWelcomeImg from "../assets/whisp-welcome.png";
 import whispTiredImg from "../assets/whisp-tired.png";
 import big3Img from "../assets/big-3.png";
+import big3CustomizedImg from "../assets/big-3-customized.png";
 import dozerHappyImg from "../assets/dozer-happy.png";
 import dozerCatnapFightingImg from "../assets/dozer-napster-fighting.png";
 import napsterSleepingImg from "../assets/napster-sleeping-no-window.png";
@@ -48,6 +49,10 @@ function OnboardingScreen({ onComplete }) {
   const [showDozer, setShowDozer] = useState(false);
   const [showPointSystem, setShowPointSystem] = useState(false);
   
+  // Animation state for dream squad page
+  const [dreamSquadSubtitleText, setDreamSquadSubtitleText] = useState("");
+  const [showBig3Customized, setShowBig3Customized] = useState(false);
+  
   // Animation state for friends page
   const [showDozerFighting, setShowDozerFighting] = useState(false);
   const [showFriendsButtons, setShowFriendsButtons] = useState(false);
@@ -55,8 +60,11 @@ function OnboardingScreen({ onComplete }) {
   // Loading screen state
   const [showLoading, setShowLoading] = useState(false);
   const [loadingFadeOut, setLoadingFadeOut] = useState(false);
+  
+  // Welcome page fade-in state
+  const [showWelcome, setShowWelcome] = useState(false);
 
-  const totalPages = 8;
+  const totalPages = 9;
 
   const availableApps = ["TikTok", "Instagram", "YouTube", "Twitter/X", "Reddit", "Snapchat", "Facebook", "Netflix"];
 
@@ -112,7 +120,9 @@ function OnboardingScreen({ onComplete }) {
 
   // Page 0: Welcome (Duolingo style)
   const renderWelcomePage = () => (
-    <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
+    <div className={`h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900 transition-opacity duration-1000 ${
+      showWelcome ? 'opacity-100' : 'opacity-0'
+    }`}>
       {/* Mascot at top */}
       <div className="flex-1 flex items-center justify-center pt-12 pb-4">
         <img
@@ -283,7 +293,17 @@ function OnboardingScreen({ onComplete }) {
 
   // Reset animation states when page changes
   useEffect(() => {
-    if (currentPage === 1) {
+    if (currentPage === 0) {
+      // Reset and start fade-in for welcome page
+      setShowWelcome(false);
+      const welcomeTimer = setTimeout(() => {
+        setShowWelcome(true);
+      }, 100); // Small delay before starting fade-in
+      
+      return () => {
+        clearTimeout(welcomeTimer);
+      };
+    } else if (currentPage === 1) {
       // Reset and start animations for mascot intro page
       setMascotIntroText("");
       
@@ -361,7 +381,35 @@ function OnboardingScreen({ onComplete }) {
         clearTimeout(leagueTimer);
       };
     } else if (currentPage === 5) {
-      // Reset and start animations for friends page
+      // Reset and start animations for dream squad page
+      setDreamSquadSubtitleText("");
+      setShowBig3Customized(false);
+      
+      // Step 1: Type out subtitle text
+      const subtitleText = "Turn your sleep streak into in-game swag!";
+      const typingSpeed = 50; // ms per character
+      
+      const dreamSquadTimer = setTimeout(() => {
+        let currentIndex = 0;
+        const typeInterval = setInterval(() => {
+          if (currentIndex <= subtitleText.length) {
+            setDreamSquadSubtitleText(subtitleText.slice(0, currentIndex));
+            currentIndex++;
+          } else {
+            clearInterval(typeInterval);
+            // Step 2: After typing completes, fade in image
+            setTimeout(() => {
+              setShowBig3Customized(true);
+            }, 100);
+          }
+        }, typingSpeed);
+      }, 200); // Small delay before starting
+      
+      return () => {
+        clearTimeout(dreamSquadTimer);
+      };
+    } else if (currentPage === 6) {
+      // Reset and start animations for friends page (was page 5, now page 6)
       setShowDozerFighting(false);
       setShowFriendsButtons(false);
       
@@ -377,8 +425,8 @@ function OnboardingScreen({ onComplete }) {
       return () => {
         clearTimeout(friendsTimer);
       };
-    } else if (currentPage === 6) {
-      // Reset and start animations for app blocking page
+    } else if (currentPage === 7) {
+      // Reset and start animations for app blocking page (was page 6, now page 7)
       setShowMascot(false);
       setSpeechBubbleText("");
       setShowHeading(false);
@@ -420,6 +468,8 @@ function OnboardingScreen({ onComplete }) {
       setLeagueSubtitleText("");
       setShowDozer(false);
       setShowPointSystem(false);
+      setDreamSquadSubtitleText("");
+      setShowBig3Customized(false);
       setShowDozerFighting(false);
       setShowFriendsButtons(false);
       setShowMascot(false);
@@ -429,7 +479,7 @@ function OnboardingScreen({ onComplete }) {
     }
   }, [currentPage]);
 
-  // Page 6: App blocking (iOS style with intro)
+  // Page 7: App blocking (iOS style with intro) (was page 6, now page 7)
   const renderAppsPage = () => {
     const subtitleText = "These apps will be blocked during your sleep time.";
 
@@ -688,7 +738,33 @@ function OnboardingScreen({ onComplete }) {
     </div>
   );
 
-  // Page 5: Friends & Leagues Splash
+  // Page 5: Build Your Dream Squad
+  const renderDreamSquadPage = () => (
+    <div className="h-full overflow-y-auto bg-gradient-to-b from-indigo-900 to-slate-900 p-5">
+      <div className="text-center space-y-2 mb-6 pt-6">
+        <h1 className="text-3xl font-header text-white mb-2">Build Your Dream Squad</h1>
+        <p className="text-sm text-white/70 min-h-[1.25rem]">
+          {dreamSquadSubtitleText}
+          {dreamSquadSubtitleText.length > 0 && dreamSquadSubtitleText.length < "Turn your sleep streak into in-game swag!".length && (
+            <span className="animate-pulse">|</span>
+          )}
+        </p>
+      </div>
+
+      {/* Big 3 Customized image */}
+      <div className={`flex items-center justify-center my-6 transition-opacity duration-500 ${
+        showBig3Customized ? 'opacity-100' : 'opacity-0'
+      }`}>
+        <img
+          src={big3CustomizedImg}
+          alt="Big 3 Customized"
+          className="w-72 h-72 object-contain"
+        />
+      </div>
+    </div>
+  );
+
+  // Page 6: Friends & Leagues Splash (was page 5, now page 6)
   const renderFriendsPage = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       {/* Centered content */}
@@ -749,7 +825,7 @@ function OnboardingScreen({ onComplete }) {
     </div>
   );
 
-  // Page 7: Sleep schedule
+  // Page 8: Sleep schedule (was page 7, now page 8)
   const renderSchedulePage = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-indigo-900 to-slate-900">
       {/* Centered content */}
@@ -846,6 +922,7 @@ function OnboardingScreen({ onComplete }) {
     renderStatsPage,
     renderLeagueFormatPage,
     renderLeagueSchedulePage,
+    renderDreamSquadPage,
     renderFriendsPage,
     renderAppsPage,
     renderSchedulePage,
@@ -900,7 +977,7 @@ function OnboardingScreen({ onComplete }) {
       </div>
 
       {/* Navigation - hidden on welcome page, mascot intro page, stats page, and friends page */}
-      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 5 && (
+      {currentPage > 0 && currentPage !== 1 && currentPage !== 2 && currentPage !== 6 && (
         <div className="p-5 space-y-3 border-t border-white/10 bg-gradient-to-b from-indigo-900 to-slate-900">
           {/* Progress indicator */}
           <div className="flex gap-1 justify-center">
