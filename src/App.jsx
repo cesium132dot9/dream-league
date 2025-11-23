@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HistoryScreen from "./screens/HistoryScreen";
@@ -16,7 +16,9 @@ function App() {
   const [freezes, setFreeze] = useState(2);
   const [targetBedtime, setTargetBedtime] = useState("23:00");
   const [sleepHistory, setSleepHistory] = useState([]); // Array of {date, status: 'good'|'late'|'freeze'}
-  const [weeklyPoints, setWeeklyPoints] = useState(0); 
+  const [weeklyPoints, setWeeklyPoints] = useState(0);
+  const [selectedOutfit, setSelectedOutfit] = useState("default"); // "default", "pit", etc.
+  const [unlockedOutfits, setUnlockedOutfits] = useState(new Set(["default"])); // Permanently unlocked outfits 
 
   const handleCompleteOnboarding = (onboardingData) => {
     // Store onboarding data (you can use this later for app blocking, schedule, etc.)
@@ -28,6 +30,26 @@ function App() {
     setHasOnboarded(true);
     setCurrentScreen("home");
   };
+
+  // Unlock outfits permanently when streak reaches requirements
+  useEffect(() => {
+    const outfitRequirements = [
+      { id: "default", requiredStreak: 0 },
+      { id: "pit", requiredStreak: 3 },
+      { id: "blue", requiredStreak: 7 },
+      { id: "gold", requiredStreak: 14 },
+    ];
+
+    outfitRequirements.forEach(({ id, requiredStreak }) => {
+      if (streak >= requiredStreak) {
+        setUnlockedOutfits((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(id);
+          return newSet;
+        });
+      }
+    });
+  }, [streak]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -56,13 +78,19 @@ function App() {
               weeklyPoints={weeklyPoints}
               setWeeklyPoints={setWeeklyPoints}
               username={username}
+              selectedOutfit={selectedOutfit}
             />
           )}
           {currentScreen === "history" && (
             <HistoryScreen streak={streak} sleepHistory={sleepHistory} weeklyPoints={weeklyPoints} />
           )}
           {currentScreen === "customize" && (
-            <CustomizeScreen streak={streak} />
+            <CustomizeScreen 
+              streak={streak} 
+              selectedOutfit={selectedOutfit} 
+              setSelectedOutfit={setSelectedOutfit}
+              unlockedOutfits={unlockedOutfits}
+            />
           )}
         </div>
 
